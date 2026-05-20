@@ -1197,6 +1197,113 @@
 
   /* Calendar always fits the viewport — no horizontal scroll. */
 
+  /* ─────────────────────────────────────────────────────────────────
+     MONTH PLAN — fit-to-viewport calendar (Mac-OS-style proportions)
+     The entire pane is a flex column sized to the viewport. The calendar
+     gets all remaining vertical space; each of the 5 week rows shares
+     that space equally so day cards always fill the available height.
+     ───────────────────────────────────────────────────────────────── */
+  [data-view-pane="month"] {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 46px);   /* viewport minus topbar */
+    padding: 14px 26px 14px;
+    gap: 10px;
+  }
+  [data-view-pane="month"] .page-sub { display: none; }
+
+  /* Toolbar — compact horizontal strip */
+  [data-view-pane="month"] .month-toolbar {
+    margin-bottom: 0;
+    gap: 10px;
+  }
+  [data-view-pane="month"] .month-toolbar h1 { font-size: 22px; min-width: 200px; }
+  [data-view-pane="month"] .month-toolbar .nav-arrow { width: 28px; height: 28px; font-size: 12px; }
+  [data-view-pane="month"] .month-toolbar button.ghost,
+  [data-view-pane="month"] .month-toolbar button.primary { padding: 6px 12px; font-size: 12.5px; }
+
+  /* Mantra — single-line elegant strip */
+  [data-view-pane="month"] #month-mantra-host { flex: 0 0 auto; }
+  [data-view-pane="month"] .month-mantra {
+    margin: 0; padding: 9px 16px;
+  }
+  [data-view-pane="month"] .month-mantra .mlabel { font-size: 9.5px; margin-bottom: 3px; }
+  [data-view-pane="month"] .month-mantra textarea {
+    font-size: 17px; min-height: 22px; line-height: 1.25;
+  }
+
+  /* Bucket summary — denser tiles */
+  [data-view-pane="month"] #month-buckets { flex: 0 0 auto; }
+  [data-view-pane="month"] #month-buckets .bucket-summary {
+    gap: 7px; margin-bottom: 0;
+    grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+  }
+  [data-view-pane="month"] #month-buckets .bucket-tile { padding: 7px 12px; gap: 8px; }
+  [data-view-pane="month"] #month-buckets .bucket-tile .bt-icon { font-size: 13px; }
+  [data-view-pane="month"] #month-buckets .bucket-tile .bt-name { font-size: 10px; }
+  [data-view-pane="month"] #month-buckets .bucket-tile .bt-count { font-size: 15px; }
+  [data-view-pane="month"] #month-buckets .bucket-tile .bt-sub { font-size: 9.5px; }
+
+  /* CALENDAR — takes all remaining vertical space */
+  [data-view-pane="month"] #weeks {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-height: 0;          /* allow children to shrink properly */
+  }
+  [data-view-pane="month"] #weeks .week-row { gap: 5px; margin: 0; }
+  [data-view-pane="month"] #weeks .week-row.head { flex: 0 0 auto; }
+  [data-view-pane="month"] #weeks .week-row.head .day-head {
+    font-size: 10px; padding: 2px 8px;
+  }
+  [data-view-pane="month"] #weeks .week-row:not(.head) {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  /* Day cards — fill the row height, no min/max, internal overflow hidden */
+  [data-view-pane="month"] .day-card {
+    min-height: 0;
+    max-height: none;
+    height: 100%;
+    padding: 6px 9px 5px;
+    gap: 4px;
+    overflow: hidden;
+  }
+  [data-view-pane="month"] .day-card.empty { min-height: 0; max-height: none; }
+  [data-view-pane="month"] .day-card .num { font-size: 13px; margin-bottom: 1px; }
+  [data-view-pane="month"] .day-card .num small { font-size: 8.5px; }
+  [data-view-pane="month"] .day-card .cells {
+    flex: 1; min-height: 0; overflow: hidden;
+    gap: 3px;
+  }
+  [data-view-pane="month"] .day-card .cell {
+    font-size: 11px; padding: 3px 8px; min-height: 22px;
+  }
+  [data-view-pane="month"] .day-card .cell .text {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+  }
+  [data-view-pane="month"] .day-card .add-cell {
+    font-size: 10px; padding: 3px 8px;
+  }
+  [data-view-pane="month"] .day-card.weekly-goals .num { font-size: 10px; }
+
+  /* Footer — caps at 130px with internal scroll */
+  [data-view-pane="month"] #month-footer { flex: 0 0 auto; }
+  [data-view-pane="month"] .month-footer { gap: 10px; margin-top: 0; }
+  [data-view-pane="month"] .footer-card {
+    padding: 10px 14px; gap: 5px;
+    max-height: 130px; overflow-y: auto;
+  }
+  [data-view-pane="month"] .footer-card::-webkit-scrollbar { width: 4px; }
+  [data-view-pane="month"] .footer-card::-webkit-scrollbar-thumb { background: rgba(212,160,23,0.30); border-radius: 999px; }
+  [data-view-pane="month"] .footer-card h3 { font-size: 11px; margin-bottom: 3px; }
+  [data-view-pane="month"] .footer-card .cells { gap: 4px; }
+  [data-view-pane="month"] .footer-card .cell {
+    font-size: 12px; padding: 4px 10px; min-height: 24px;
+  }
+
   /* Coloured task variant — outline only (used in war-map quarter themes
      and week-day inline cards). No bucket-label chip; the border colour IS
      the bucket identifier. */
