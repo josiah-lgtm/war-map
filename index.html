@@ -1169,7 +1169,31 @@
   }
   .cell:hover .row-act { opacity: 0.85; }
   .cell .row-act.edit:hover { background: var(--accent-tint); color: var(--accent-hover); }
+  .cell .row-act.dup:hover { background: rgba(48,209,88,0.18); color: var(--good); }
   .cell .row-act.del:hover { background: rgba(255,69,58,0.16); color: var(--bad); }
+
+  /* ─── Resize handles between week-row columns ───────────────────── */
+  .day-card { position: relative; }
+  .col-resize-handle {
+    position: absolute;
+    top: 0; bottom: 0;
+    right: -4px;
+    width: 8px;
+    cursor: col-resize;
+    z-index: 5;
+    background: transparent;
+    transition: background 0.12s;
+  }
+  .col-resize-handle:hover {
+    background: linear-gradient(90deg, transparent 0, var(--accent) 40%, var(--accent) 60%, transparent 100%);
+    opacity: 0.6;
+  }
+  .col-resize-handle.resizing {
+    background: linear-gradient(90deg, transparent 0, var(--accent) 40%, var(--accent) 60%, transparent 100%);
+    opacity: 1;
+  }
+  body.resizing-col { cursor: col-resize !important; user-select: none; }
+  body.resizing-col * { user-select: none !important; }
 
   /* Coloured task variant — outline only (used in war-map quarter themes
      and week-day inline cards). No bucket-label chip; the border colour IS
@@ -1648,6 +1672,7 @@ function defaultState() {
     dayReports: {},         // { 'YYYY-MM-DD': { howItWent, wins, blockers, habitCheckins: {}, tomorrowPriorities: [a,b,c] } }
     monthMantras: {},       // { 'YYYY-MM': 'string' }
     sidebarCollapsed: false,
+    weekColRatios: [1, 1, 1, 1, 1, 1, 1, 1.4],   // 7 day cols + Weekly Goals
   };
 }
 
@@ -1717,6 +1742,9 @@ function migrateState(s) {
   out.dayReports = (s.dayReports && typeof s.dayReports === 'object') ? s.dayReports : {};
   out.monthMantras = (s.monthMantras && typeof s.monthMantras === 'object') ? s.monthMantras : {};
   out.sidebarCollapsed = !!s.sidebarCollapsed;
+  out.weekColRatios = Array.isArray(s.weekColRatios) && s.weekColRatios.length === 8
+    ? s.weekColRatios.map(n => Math.max(0.2, Number(n) || 1))
+    : [1, 1, 1, 1, 1, 1, 1, 1.4];
   return out;
 }
 
@@ -2007,17 +2035,41 @@ function renderCells(container, opts) {
       badge.textContent = `${subP.done}/${subP.total}`;
       cell.appendChild(badge);
     }
-    // Edit + delete buttons (visible on hover)
+    // Edit + duplicate + delete buttons (visible on hover)
     const editBtn = document.createElement('button');
     editBtn.className = 'row-act edit';
     editBtn.textContent = '✎';
     editBtn.title = 'Rename';
     editBtn.addEventListener('click', ev => {
       ev.stopPropagation();
-      // Trigger inline edit by dispatching dblclick on text
       text.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }));
     });
     cell.appendChild(editBtn);
+    const dupBtn = document.createElement('button');
+    dupBtn.className = 'row-act dup';
+    dupBtn.textContent = '⎘';
+    dupBtn.title = 'Duplicate (undoable)';
+    dupBtn.addEventListener('click', ev => {
+      ev.stopPropagation();
+      const idx = container.tasks.indexOf(t);
+      if (idx < 0) return;
+      const copy = JSON.parse(JSON.stringify(t));
+      // re-uid the copy + every sub-task so they're independent
+      (function reUid(node) {
+        node.id = uid();
+        if (Array.isArray(node.tasks)) node.tasks.forEach(reUid);
+      })(copy);
+      container.tasks.splice(idx + 1, 0, copy);
+      saveState();
+      const txt = (copy.text || '').trim() || '(empty task)';
+      recordChange(
+        `Duplicated: ${txt.length > 40 ? txt.slice(0, 39) + '…' : txt}`,
+        () => { const i = container.tasks.indexOf(copy); if (i >= 0) container.tasks.splice(i, 1); },
+        () => container.tasks.splice(idx + 1, 0, copy)
+      );
+      onChange && onChange();
+    });
+    cell.appendChild(dupBtn);
     const delBtn = document.createElement('button');
     delBtn.className = 'row-act del';
     delBtn.textContent = '×';
@@ -2303,6 +2355,43 @@ function renderDashboard() {
 // ─────────────────────────────────────────────────────────────────────
 // Month plan render
 // ─────────────────────────────────────────────────────────────────────
+// Drag-to-resize a week-row column. Updates ratios live; persists on mouseup.
+function startColResize(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const handle = e.currentTarget;
+  const colIdx = parseInt(handle.dataset.colIdx, 10);
+  if (!isFinite(colIdx)) return;
+  const card = handle.closest('.day-card');
+  if (!card) return;
+  const startX = e.clientX;
+  const startWidth = card.offsetWidth;
+  const startRatio = state.weekColRatios[colIdx];
+  handle.classList.add('resizing');
+  document.body.classList.add('resizing-col');
+
+  function applyTpl() {
+    const tpl = state.weekColRatios.map(r => `${Math.max(0.2, r).toFixed(3)}fr`).join(' ');
+    document.querySelectorAll('[data-view-pane="month"] .week-row').forEach(r => r.style.gridTemplateColumns = tpl);
+  }
+  function onMove(ev) {
+    const delta = ev.clientX - startX;
+    const newWidth = Math.max(60, startWidth + delta);
+    const newRatio = Math.max(0.2, startRatio * (newWidth / startWidth));
+    state.weekColRatios[colIdx] = newRatio;
+    applyTpl();
+  }
+  function onUp() {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    handle.classList.remove('resizing');
+    document.body.classList.remove('resizing-col');
+    saveState();
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
 function renderMonth() {
   const y = state.year, m = state.activeMonth;
   const title = document.getElementById('month-title');
@@ -2317,8 +2406,13 @@ function renderMonth() {
   const today = todayIso();
   const host = document.getElementById('weeks');
   host.innerHTML = '';
+  // Build column template from user-resizable ratios. All week-rows (head
+  // + body) share the same template so columns stay aligned.
+  const colTpl = (state.weekColRatios || [1,1,1,1,1,1,1,1.4])
+    .map(r => `${Math.max(0.2, r).toFixed(3)}fr`).join(' ');
   const headRow = document.createElement('div');
   headRow.className = 'week-row head';
+  headRow.style.gridTemplateColumns = colTpl;
   WEEKDAYS_SHORT.forEach(w => {
     const c = document.createElement('div'); c.className = 'day-head'; c.textContent = w;
     headRow.appendChild(c);
@@ -2330,6 +2424,7 @@ function renderMonth() {
   for (let wIdx = 0; wIdx < weeksCount; wIdx++) {
     const row = document.createElement('div');
     row.className = 'week-row';
+    row.style.gridTemplateColumns = colTpl;
     let anchorDay = wIdx * 7 - startOffset + 1;
     for (let dIdx = 0; dIdx < 7; dIdx++) {
       const cellIndex = wIdx * 7 + dIdx;
@@ -2362,9 +2457,16 @@ function renderMonth() {
       card.appendChild(cellsEl);
       makeDropTarget(card, { source: 'day', key: id });
       card.addEventListener('click', ev => {
-        if (ev.target.closest('.cell') || ev.target.closest('.add-cell') || ev.target.closest('.check') || ev.target.closest('.add-input')) return;
+        if (ev.target.closest('.cell') || ev.target.closest('.add-cell') || ev.target.closest('.check') || ev.target.closest('.add-input') || ev.target.classList.contains('col-resize-handle')) return;
         openDay(id);
       });
+      // Resize handle (col 0..6 — drag to resize this day's column)
+      const handle = document.createElement('div');
+      handle.className = 'col-resize-handle';
+      handle.dataset.colIdx = String(dIdx);
+      handle.title = 'Drag to resize column';
+      handle.addEventListener('mousedown', startColResize);
+      card.appendChild(handle);
       row.appendChild(card);
     }
     if (anchorDay < 1) anchorDay = 1;
@@ -2387,9 +2489,16 @@ function renderMonth() {
     }));
     makeDropTarget(wg, { source: 'week', key: monday });
     wg.addEventListener('click', ev => {
-      if (ev.target.closest('.cell') || ev.target.closest('.add-cell') || ev.target.closest('.check') || ev.target.closest('.add-input')) return;
+      if (ev.target.closest('.cell') || ev.target.closest('.add-cell') || ev.target.closest('.check') || ev.target.closest('.add-input') || ev.target.classList.contains('col-resize-handle')) return;
       openWeek(monday);
     });
+    // Resize handle for the Weekly Goals column (col index 7)
+    const wgHandle = document.createElement('div');
+    wgHandle.className = 'col-resize-handle';
+    wgHandle.dataset.colIdx = '7';
+    wgHandle.title = 'Drag to resize column';
+    wgHandle.addEventListener('mousedown', startColResize);
+    wg.appendChild(wgHandle);
     row.appendChild(wg);
     host.appendChild(row);
   }
