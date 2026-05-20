@@ -1293,17 +1293,13 @@
   .chart-card .week-label { fill: var(--text-tertiary); font-size: 9.5px; }
 
   /* ─────────────────────────────────────────────────────────────────
-     COMPACT MODE — dashboard + month-plan packed so the whole page is
-     visible without scrolling on a standard laptop (~1280–1440 x 800+).
-     Fonts stay legible; only spacing / sizing tightens up.
+     COMPACT MODE — dashboard only. Packed so the whole year fits in a
+     standard laptop viewport without scrolling. Month plan keeps its
+     original generous spacing (user prefers the roomier layout there).
      ───────────────────────────────────────────────────────────────── */
-  [data-view-pane="dashboard"], [data-view-pane="month"] {
-    padding: 10px 22px 12px;
-  }
-  [data-view-pane="dashboard"] h1, [data-view-pane="month"] h1 { font-size: 20px; margin: 0; }
-  [data-view-pane="dashboard"] .page-sub, [data-view-pane="month"] .page-sub {
-    display: none;     /* sub-text hidden in compact mode to save vertical space */
-  }
+  [data-view-pane="dashboard"] { padding: 10px 22px 12px; }
+  [data-view-pane="dashboard"] h1 { font-size: 20px; margin: 0; }
+  [data-view-pane="dashboard"] .page-sub { display: none; }
 
   /* Year progress — more compact + bar smaller */
   [data-view-pane="dashboard"] .year-progress {
@@ -1318,24 +1314,16 @@
   [data-view-pane="dashboard"] .year-progress .yp-left { font-size: 12px; min-width: 200px; }
   [data-view-pane="dashboard"] .year-progress .yp-left .head { font-size: 10px; margin-bottom: 3px; }
 
-  /* Bucket summary tiles — denser */
-  [data-view-pane="dashboard"] .bucket-summary,
-  [data-view-pane="month"] .bucket-summary {
+  /* Bucket summary tiles — denser (dashboard only) */
+  [data-view-pane="dashboard"] .bucket-summary {
     gap: 7px; margin-bottom: 10px;
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   }
-  [data-view-pane="dashboard"] .bucket-tile,
-  [data-view-pane="month"] .bucket-tile {
-    padding: 7px 12px; gap: 8px;
-  }
-  [data-view-pane="dashboard"] .bucket-tile .bt-icon,
-  [data-view-pane="month"] .bucket-tile .bt-icon { font-size: 13px; }
-  [data-view-pane="dashboard"] .bucket-tile .bt-name,
-  [data-view-pane="month"] .bucket-tile .bt-name { font-size: 10px; }
-  [data-view-pane="dashboard"] .bucket-tile .bt-count,
-  [data-view-pane="month"] .bucket-tile .bt-count { font-size: 15px; }
-  [data-view-pane="dashboard"] .bucket-tile .bt-sub,
-  [data-view-pane="month"] .bucket-tile .bt-sub { font-size: 9.5px; }
+  [data-view-pane="dashboard"] .bucket-tile { padding: 7px 12px; gap: 8px; }
+  [data-view-pane="dashboard"] .bucket-tile .bt-icon { font-size: 13px; }
+  [data-view-pane="dashboard"] .bucket-tile .bt-name { font-size: 10px; }
+  [data-view-pane="dashboard"] .bucket-tile .bt-count { font-size: 15px; }
+  [data-view-pane="dashboard"] .bucket-tile .bt-sub { font-size: 9.5px; }
 
   /* Quarter rows — minimal padding, themes shrink to fit. Don't stretch
      children vertically (otherwise month tiles match the tall themes col). */
@@ -1358,18 +1346,11 @@
     font-size: 10.5px; padding: 3px 7px; min-height: 20px;
     overflow: hidden;
   }
-  [data-view-pane="dashboard"] .quarter-themes .cell .text,
-  [data-view-pane="month"] .day-card .cell .text,
-  [data-view-pane="month"] .footer-card .cell .text {
+  [data-view-pane="dashboard"] .quarter-themes .cell .text {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     min-width: 0;
-  }
-  [data-view-pane="dashboard"] .quarter-themes .cell,
-  [data-view-pane="month"] .day-card .cell,
-  [data-view-pane="month"] .footer-card .cell {
-    overflow: hidden;
   }
   [data-view-pane="dashboard"] .quarter-themes .add-cell {
     font-size: 10px; padding: 3px 7px;
@@ -1387,76 +1368,6 @@
     height: 22px;
   }
   [data-view-pane="dashboard"] .day-cell.has-tasks::after { width: 3px; height: 3px; bottom: 2px; right: 2px; }
-
-  /* Month plan toolbar */
-  [data-view-pane="month"] .month-toolbar {
-    margin-bottom: 10px; gap: 8px;
-  }
-  [data-view-pane="month"] .month-toolbar h1 { font-size: 22px; min-width: 180px; }
-  [data-view-pane="month"] .month-toolbar .nav-arrow { width: 28px; height: 28px; font-size: 12px; }
-  [data-view-pane="month"] .month-toolbar button.ghost,
-  [data-view-pane="month"] .month-toolbar button.primary {
-    padding: 6px 11px; font-size: 12px;
-  }
-
-  /* Monthly mantra — slim one-line strip */
-  [data-view-pane="month"] .month-mantra {
-    padding: 7px 14px; margin: 0 0 8px;
-  }
-  [data-view-pane="month"] .month-mantra .mlabel {
-    font-size: 9px; margin-bottom: 2px;
-  }
-  [data-view-pane="month"] .month-mantra textarea {
-    font-size: 15px; min-height: 20px; line-height: 1.2;
-  }
-
-  /* Week rows + day cards — denser */
-  [data-view-pane="month"] .week-row {
-    grid-template-columns: repeat(7, 1fr) 1.15fr;
-    gap: 5px; margin-bottom: 5px;
-  }
-  [data-view-pane="month"] .week-row.head { margin-bottom: 4px; }
-  [data-view-pane="month"] .week-row.head .day-head {
-    font-size: 9.5px; padding: 2px 6px;
-  }
-  [data-view-pane="month"] .day-card {
-    min-height: 95px;
-    padding: 6px 9px 5px;
-    gap: 4px;
-    /* No max-height / overflow — every task in the day is always visible */
-  }
-  [data-view-pane="month"] .day-card .cells {
-    gap: 4px;
-  }
-  [data-view-pane="month"] .day-card .num {
-    font-size: 13px; margin-bottom: 1px;
-  }
-  [data-view-pane="month"] .day-card .num small { font-size: 8.5px; }
-  [data-view-pane="month"] .day-card .cell {
-    font-size: 10px; padding: 3px 7px; min-height: 20px; gap: 5px;
-  }
-  [data-view-pane="month"] .day-card .add-cell {
-    font-size: 9.5px; padding: 3px 7px;
-  }
-  [data-view-pane="month"] .day-card.weekly-goals .num { font-size: 10px; }
-  [data-view-pane="month"] .day-card.empty { min-height: 80px; }
-
-  /* Monthly footer — fits all projects/KPIs (no scroll inside the box) */
-  [data-view-pane="month"] .month-footer {
-    gap: 12px; margin-top: 12px;
-  }
-  [data-view-pane="month"] .footer-card {
-    padding: 11px 14px; gap: 6px;
-    /* No max-height — every project / KPI is always visible */
-  }
-  [data-view-pane="month"] .footer-card h3 { font-size: 11px; margin-bottom: 4px; }
-  [data-view-pane="month"] .footer-card .cells { gap: 4px; }
-  [data-view-pane="month"] .footer-card .cell {
-    font-size: 11.5px; padding: 5px 10px; min-height: 24px;
-  }
-
-  /* Smaller topbar so we get a few more vertical px */
-  .topbar { padding: 8px 24px; }
 
   /* Print styles */
   @media print {
