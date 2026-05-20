@@ -1222,14 +1222,22 @@
   [data-view-pane="month"] .month-toolbar button.ghost,
   [data-view-pane="month"] .month-toolbar button.primary { padding: 6px 12px; font-size: 12.5px; }
 
-  /* Mantra — single-line elegant strip */
+  /* Mantra — bold centerpiece for the month */
   [data-view-pane="month"] #month-mantra-host { flex: 0 0 auto; }
   [data-view-pane="month"] .month-mantra {
-    margin: 0; padding: 9px 16px;
+    margin: 0; padding: 12px 24px;
+    text-align: center;
   }
-  [data-view-pane="month"] .month-mantra .mlabel { font-size: 9.5px; margin-bottom: 3px; }
+  [data-view-pane="month"] .month-mantra .mlabel {
+    font-size: 9.5px; margin-bottom: 4px; text-align: center;
+  }
   [data-view-pane="month"] .month-mantra textarea {
-    font-size: 17px; min-height: 22px; line-height: 1.25;
+    font-size: 26px; min-height: 32px; line-height: 1.2;
+    text-align: center;
+    font-weight: 700;
+  }
+  [data-view-pane="month"] .month-mantra textarea::placeholder {
+    text-align: center;
   }
 
   /* Bucket summary — denser tiles */
@@ -1280,10 +1288,49 @@
   }
   [data-view-pane="month"] .day-card .cell {
     font-size: 11px; padding: 3px 8px; min-height: 22px;
+    position: relative;
   }
   [data-view-pane="month"] .day-card .cell .text {
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
   }
+  /* Hover popover: full task text in bigger / bolder font, lifted above
+     adjacent cells via z-index + the :has() escape on the day-card. */
+  [data-view-pane="month"] .day-card .cell::after {
+    content: attr(data-full);
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 6px);
+    background: #1a1a1f;
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: 700;
+    white-space: normal;
+    min-width: 200px;
+    max-width: 320px;
+    z-index: 1000;
+    box-shadow: 0 14px 36px rgba(0,0,0,0.6);
+    color: var(--text);
+    line-height: 1.4;
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+    transition: opacity 0.15s ease 0.25s, visibility 0s linear 0.4s;
+  }
+  [data-view-pane="month"] .day-card .cell[data-full]:hover::after {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.15s ease 0.25s, visibility 0s linear 0s;
+  }
+  /* When a cell is hovered, let the popover escape the day-card overflow */
+  [data-view-pane="month"] .day-card:has(.cell:hover) {
+    overflow: visible;
+    z-index: 100;
+  }
+  [data-view-pane="month"] .day-card:has(.cell:hover) .cells { overflow: visible; }
+  [data-view-pane="month"] .week-row:has(.cell:hover) { z-index: 100; position: relative; }
+  [data-view-pane="month"] #weeks:has(.cell:hover) { overflow: visible; }
   [data-view-pane="month"] .day-card .add-cell {
     font-size: 10px; padding: 3px 8px;
   }
@@ -1393,6 +1440,15 @@
   .bucket-tile .bt-sub {
     font-size: 10.5px; color: var(--text-tertiary);
   }
+  .bucket-tile.drop-active {
+    background: var(--bucket-color, var(--accent));
+    color: #1a1a1a;
+    transform: scale(1.03);
+    transition: transform 0.12s;
+  }
+  .bucket-tile.drop-active .bt-name,
+  .bucket-tile.drop-active .bt-count,
+  .bucket-tile.drop-active .bt-sub { color: #1a1a1a !important; }
 
   /* ─── Habit graphs ──────────────────────────────────────────────── */
   .habit-charts {
@@ -2070,6 +2126,7 @@ function renderCells(container, opts) {
     const hasExtra = (t.notes && t.notes.trim()) || subP.total > 0;
     cell.className = 'cell' + (t.done ? ' done' : '') + (hasExtra ? ' has-extra' : '') + (colorByBucket && t.bucket ? ' coloured' : '');
     cell.dataset.taskId = t.id;
+    cell.dataset.full = (t.text || '').trim() || '(empty)';
     // If colour-by-bucket, set CSS vars
     if (colorByBucket && t.bucket) {
       const b = getBucket(t.bucket);
@@ -2298,13 +2355,16 @@ function renderBucketSummaryInto(hostId, counts) {
   host.innerHTML = '';
   const wrap = document.createElement('div');
   wrap.className = 'bucket-summary';
-  // Build entries — buckets in their state order + uncategorised at the end (only if non-zero)
   const entries = state.buckets.map(b => ({ id: b.id, label: b.label, icon: b.icon, color: b.color, ...counts[b.id] }));
-  if ((counts._none?.total || 0) > 0) entries.push({ id: '_none', label: 'Uncategorised', icon: '·', color: 'rgba(255,255,255,0.18)', total: counts._none.total, done: counts._none.done });
+  // Always show "uncategorised" as a drop target (in addition to when non-zero)
+  // so users can drag a task there to clear its bucket.
+  entries.push({ id: '_none', label: 'Uncategorised', icon: '·', color: 'rgba(255,255,255,0.18)', total: counts._none?.total || 0, done: counts._none?.done || 0 });
   entries.forEach(e => {
     const tile = document.createElement('div');
     tile.className = 'bucket-tile';
     tile.style.setProperty('--bucket-color', e.color);
+    tile.dataset.bucketId = e.id;
+    tile.title = 'Drop a task here to assign it to this bucket';
     tile.innerHTML = `
       <span class="bt-icon">${e.icon || ''}</span>
       <div class="bt-meta">
@@ -2313,9 +2373,40 @@ function renderBucketSummaryInto(hostId, counts) {
         <div class="bt-sub">${e.done}/${e.total} done · ${e.total ? Math.round((e.done / e.total) * 100) : 0}%</div>
       </div>
     `;
+    makeBucketDropTarget(tile, e.id === '_none' ? null : e.id);
     wrap.appendChild(tile);
   });
   host.appendChild(wrap);
+}
+
+// Drop a dragged task onto a bucket tile → assigns task.bucket (undoable).
+function makeBucketDropTarget(el, bucketId) {
+  el.addEventListener('dragover', e => {
+    if (!dragPayload) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'link';
+    el.classList.add('drop-active');
+  });
+  el.addEventListener('dragleave', () => el.classList.remove('drop-active'));
+  el.addEventListener('drop', e => {
+    e.preventDefault();
+    el.classList.remove('drop-active');
+    if (!dragPayload) return;
+    const src = getNode(dragPayload.source, dragPayload.key);
+    const task = src.tasks.find(t => t.id === dragPayload.taskId);
+    if (!task) return;
+    const oldBucket = task.bucket;
+    if (oldBucket === bucketId) return;
+    task.bucket = bucketId;
+    saveState();
+    const bLabel = bucketId ? (getBucket(bucketId)?.label || 'bucket') : 'Uncategorised';
+    recordChange(
+      `Moved "${(task.text || 'task').slice(0, 30)}" to ${bLabel}`,
+      () => { task.bucket = oldBucket; },
+      () => { task.bucket = bucketId; }
+    );
+    rerenderActiveView();
+  });
 }
 
 function renderDashboardBucketSummary() {
@@ -2791,8 +2882,42 @@ function renderModalTaskSection(parentEl, container, opts) {
   parentEl.appendChild(section);
 }
 
+// Attach bullet-list autocomplete behaviour to any textarea:
+//   • type "- " (or "* ") at the start of a line, press Enter → next line
+//     automatically gets a "- " prefix
+//   • press Enter on an empty bullet line → bullet is removed (escape)
+function attachBulletAutocontinue(ta) {
+  ta.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const v = ta.value;
+    const pos = ta.selectionStart;
+    if (pos !== ta.selectionEnd) return;
+    const lineStart = v.lastIndexOf('\n', pos - 1) + 1;
+    const currentLine = v.slice(lineStart, pos);
+    const bulletMatch = currentLine.match(/^([-*])(\s+)(.*)$/);
+    if (!bulletMatch) return;
+    const [, marker, sp, rest] = bulletMatch;
+    if (!rest.trim()) {
+      // Empty bullet — remove the whole prefix and exit list
+      e.preventDefault();
+      const newVal = v.slice(0, lineStart) + v.slice(pos);
+      ta.value = newVal;
+      ta.selectionStart = ta.selectionEnd = lineStart;
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+    } else {
+      // Continue the list
+      e.preventDefault();
+      const prefix = `\n${marker}${sp}`;
+      const newVal = v.slice(0, pos) + prefix + v.slice(pos);
+      ta.value = newVal;
+      ta.selectionStart = ta.selectionEnd = pos + prefix.length;
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  });
+}
+
 function renderModalNotesSection(parentEl, container, opts) {
-  const { title = 'Notes', placeholder = 'Free-form notes…' } = opts || {};
+  const { title = 'Notes', placeholder = 'Free-form notes… (type "- " for a bullet list)' } = opts || {};
   const section = document.createElement('div');
   section.className = 'modal-section';
   const h = document.createElement('h3'); h.textContent = title;
@@ -2802,6 +2927,7 @@ function renderModalNotesSection(parentEl, container, opts) {
   ta.placeholder = placeholder;
   ta.value = container.notes || '';
   ta.addEventListener('input', e => { container.notes = e.target.value; saveState(); });
+  attachBulletAutocontinue(ta);
   section.appendChild(ta);
   parentEl.appendChild(section);
 }
@@ -3238,6 +3364,7 @@ function renderEodReport(parentEl, id) {
   ta1.placeholder = 'Highlights, low points, what surprised you…';
   ta1.value = r.howItWent || '';
   ta1.addEventListener('input', e => { r.howItWent = e.target.value; saveState(); });
+  attachBulletAutocontinue(ta1);
   s1.appendChild(ta1);
   section.appendChild(s1);
   // Wins
@@ -3247,6 +3374,7 @@ function renderEodReport(parentEl, id) {
   ta2.placeholder = 'One per line — closed deals, breakthroughs, finished tasks…';
   ta2.value = r.wins || '';
   ta2.addEventListener('input', e => { r.wins = e.target.value; saveState(); });
+  attachBulletAutocontinue(ta2);
   s2.appendChild(ta2);
   section.appendChild(s2);
   // Blockers
@@ -3256,6 +3384,7 @@ function renderEodReport(parentEl, id) {
   ta3.placeholder = 'What slowed you down — tooling, dependencies, lost time…';
   ta3.value = r.blockers || '';
   ta3.addEventListener('input', e => { r.blockers = e.target.value; saveState(); });
+  attachBulletAutocontinue(ta3);
   s3.appendChild(ta3);
   section.appendChild(s3);
   // Habit check-ins
@@ -3510,6 +3639,7 @@ function openMonth(y, m) {
       ta.placeholder = 'Month wrap-up: what we shipped, what we delayed, what mattered…';
       ta.value = state.monthNotes[monthKey] || '';
       ta.addEventListener('input', e => { state.monthNotes[monthKey] = e.target.value; saveState(); });
+      attachBulletAutocontinue(ta);
       section.appendChild(ta);
       body.appendChild(section);
     },
