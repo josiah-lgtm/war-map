@@ -1195,6 +1195,16 @@
   body.resizing-col { cursor: col-resize !important; user-select: none; }
   body.resizing-col * { user-select: none !important; }
 
+  /* When the user has dragged a column wider, the calendar can exceed
+     the viewport. The #weeks container gets a horizontal scrollbar; each
+     week-row sizes to max-content so all pixel-column widths are honoured
+     and the head row stays aligned with the body rows. */
+  #weeks { overflow-x: auto; padding-bottom: 4px; }
+  #weeks::-webkit-scrollbar { height: 8px; }
+  #weeks::-webkit-scrollbar-thumb { background: rgba(212,160,23,0.35); border-radius: 999px; }
+  #weeks::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+  #weeks .week-row.is-px { width: max-content; }
+
   /* Coloured task variant — outline only (used in war-map quarter themes
      and week-day inline cards). No bucket-label chip; the border colour IS
      the bucket identifier. */
@@ -1522,6 +1532,7 @@
           <button id="export-json">Export JSON</button>
           <button id="import-json">Import JSON</button>
           <input type="file" id="import-file" accept="application/json" style="display:none" />
+          <button id="reset-col-widths">Reset month-plan column widths</button>
           <button id="reset-seed">Reset to seed (2026 + May)</button>
           <button class="danger" id="wipe-all">Wipe everything</button>
         </div>
@@ -1672,7 +1683,8 @@ function defaultState() {
     dayReports: {},         // { 'YYYY-MM-DD': { howItWent, wins, blockers, habitCheckins: {}, tomorrowPriorities: [a,b,c] } }
     monthMantras: {},       // { 'YYYY-MM': 'string' }
     sidebarCollapsed: false,
-    weekColRatios: [1, 1, 1, 1, 1, 1, 1, 1.4],   // 7 day cols + Weekly Goals
+    weekColRatios: [1, 1, 1, 1, 1, 1, 1, 1.4],   // 7 day cols + Weekly Goals (legacy; used until user drags)
+    weekColWidthsPx: null,                         // [8 numbers] once user drags — total can exceed viewport (horizontal scroll)
   };
 }
 
@@ -1745,6 +1757,9 @@ function migrateState(s) {
   out.weekColRatios = Array.isArray(s.weekColRatios) && s.weekColRatios.length === 8
     ? s.weekColRatios.map(n => Math.max(0.2, Number(n) || 1))
     : [1, 1, 1, 1, 1, 1, 1, 1.4];
+  out.weekColWidthsPx = Array.isArray(s.weekColWidthsPx) && s.weekColWidthsPx.length === 8
+    ? s.weekColWidthsPx.map(n => Math.max(50, Number(n) || 0))
+    : null;
   return out;
 }
 
@@ -2355,7 +2370,10 @@ function renderDashboard() {
 // ─────────────────────────────────────────────────────────────────────
 // Month plan render
 // ─────────────────────────────────────────────────────────────────────
-// Drag-to-resize a week-row column. Updates ratios live; persists on mouseup.
+// Drag-to-resize a week-row column. On first drag we snapshot the
+// currently-rendered pixel widths of every column into state.weekColWidthsPx,
+// then only the dragged column grows/shrinks — total grid width changes so
+// the whole calendar gets wider (with horizontal scroll on #weeks).
 function startColResize(e) {
   e.preventDefault();
   e.stopPropagation();
@@ -2364,21 +2382,35 @@ function startColResize(e) {
   if (!isFinite(colIdx)) return;
   const card = handle.closest('.day-card');
   if (!card) return;
+  // If we're still in fr mode, snapshot current rendered widths as our
+  // pixel baseline so the layout doesn't jump.
+  if (!state.weekColWidthsPx || state.weekColWidthsPx.length !== 8) {
+    const firstBodyRow = document.querySelector('[data-view-pane="month"] .week-row:not(.head)');
+    if (firstBodyRow) {
+      const kids = firstBodyRow.children;
+      const widths = [];
+      for (let i = 0; i < 8; i++) widths.push(kids[i] ? kids[i].offsetWidth : 130);
+      state.weekColWidthsPx = widths;
+      // Apply pixel template + mark rows .is-px so they take width: max-content
+      const tpl = widths.map(w => `${w.toFixed(0)}px`).join(' ');
+      document.querySelectorAll('[data-view-pane="month"] .week-row').forEach(r => {
+        r.style.gridTemplateColumns = tpl;
+        r.classList.add('is-px');
+      });
+    }
+  }
   const startX = e.clientX;
-  const startWidth = card.offsetWidth;
-  const startRatio = state.weekColRatios[colIdx];
+  const startWidth = state.weekColWidthsPx[colIdx];
   handle.classList.add('resizing');
   document.body.classList.add('resizing-col');
 
   function applyTpl() {
-    const tpl = state.weekColRatios.map(r => `${Math.max(0.2, r).toFixed(3)}fr`).join(' ');
+    const tpl = state.weekColWidthsPx.map(w => `${Math.max(50, w).toFixed(0)}px`).join(' ');
     document.querySelectorAll('[data-view-pane="month"] .week-row').forEach(r => r.style.gridTemplateColumns = tpl);
   }
   function onMove(ev) {
     const delta = ev.clientX - startX;
-    const newWidth = Math.max(60, startWidth + delta);
-    const newRatio = Math.max(0.2, startRatio * (newWidth / startWidth));
-    state.weekColRatios[colIdx] = newRatio;
+    state.weekColWidthsPx[colIdx] = Math.max(50, startWidth + delta);
     applyTpl();
   }
   function onUp() {
@@ -2406,12 +2438,15 @@ function renderMonth() {
   const today = todayIso();
   const host = document.getElementById('weeks');
   host.innerHTML = '';
-  // Build column template from user-resizable ratios. All week-rows (head
-  // + body) share the same template so columns stay aligned.
-  const colTpl = (state.weekColRatios || [1,1,1,1,1,1,1,1.4])
-    .map(r => `${Math.max(0.2, r).toFixed(3)}fr`).join(' ');
+  // Build column template. If the user has dragged a column (pixel mode),
+  // use explicit pixel widths so the whole calendar grows wider and the
+  // #weeks container can scroll horizontally. Otherwise use fr ratios.
+  const usingPx = !!(state.weekColWidthsPx && state.weekColWidthsPx.length === 8);
+  const colTpl = usingPx
+    ? state.weekColWidthsPx.map(w => `${Math.max(50, w).toFixed(0)}px`).join(' ')
+    : (state.weekColRatios || [1,1,1,1,1,1,1,1.4]).map(r => `${Math.max(0.2, r).toFixed(3)}fr`).join(' ');
   const headRow = document.createElement('div');
-  headRow.className = 'week-row head';
+  headRow.className = 'week-row head' + (usingPx ? ' is-px' : '');
   headRow.style.gridTemplateColumns = colTpl;
   WEEKDAYS_SHORT.forEach(w => {
     const c = document.createElement('div'); c.className = 'day-head'; c.textContent = w;
@@ -2423,7 +2458,7 @@ function renderMonth() {
 
   for (let wIdx = 0; wIdx < weeksCount; wIdx++) {
     const row = document.createElement('div');
-    row.className = 'week-row';
+    row.className = 'week-row' + (usingPx ? ' is-px' : '');
     row.style.gridTemplateColumns = colTpl;
     let anchorDay = wIdx * 7 - startOffset + 1;
     for (let dIdx = 0; dIdx < 7; dIdx++) {
@@ -4015,6 +4050,12 @@ document.getElementById('import-file').addEventListener('change', e => {
     catch (err) { alert('Could not parse JSON: ' + err.message); }
   };
   reader.readAsText(f);
+});
+document.getElementById('reset-col-widths').addEventListener('click', () => {
+  state.weekColWidthsPx = null;
+  state.weekColRatios = [1, 1, 1, 1, 1, 1, 1, 1.4];
+  saveState();
+  if (state.activeView === 'month') renderMonth();
 });
 document.getElementById('reset-seed').addEventListener('click', () => {
   if (!confirm('Reset everything to the seed (2026 themes + May tasks)? Your current edits will be lost.')) return;
