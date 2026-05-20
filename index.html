@@ -1195,15 +1195,7 @@
   body.resizing-col { cursor: col-resize !important; user-select: none; }
   body.resizing-col * { user-select: none !important; }
 
-  /* When the user has dragged a column wider, the calendar can exceed
-     the viewport. The #weeks container gets a horizontal scrollbar; each
-     week-row sizes to max-content so all pixel-column widths are honoured
-     and the head row stays aligned with the body rows. */
-  #weeks { overflow-x: auto; padding-bottom: 4px; }
-  #weeks::-webkit-scrollbar { height: 8px; }
-  #weeks::-webkit-scrollbar-thumb { background: rgba(212,160,23,0.35); border-radius: 999px; }
-  #weeks::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
-  #weeks .week-row.is-px { width: max-content; }
+  /* Calendar always fits the viewport — no horizontal scroll. */
 
   /* Coloured task variant — outline only (used in war-map quarter themes
      and week-day inline cards). No bucket-label chip; the border colour IS
@@ -1757,9 +1749,9 @@ function migrateState(s) {
   out.weekColRatios = Array.isArray(s.weekColRatios) && s.weekColRatios.length === 8
     ? s.weekColRatios.map(n => Math.max(0.2, Number(n) || 1))
     : [1, 1, 1, 1, 1, 1, 1, 1.4];
-  out.weekColWidthsPx = Array.isArray(s.weekColWidthsPx) && s.weekColWidthsPx.length === 8
-    ? s.weekColWidthsPx.map(n => Math.max(50, Number(n) || 0))
-    : null;
+  // Pixel-width mode was removed (caused horizontal scroll); always start
+  // in fit-to-viewport fr mode. The field is kept for backward compat.
+  out.weekColWidthsPx = null;
   return out;
 }
 
@@ -2370,10 +2362,9 @@ function renderDashboard() {
 // ─────────────────────────────────────────────────────────────────────
 // Month plan render
 // ─────────────────────────────────────────────────────────────────────
-// Drag-to-resize a week-row column. On first drag we snapshot the
-// currently-rendered pixel widths of every column into state.weekColWidthsPx,
-// then only the dragged column grows/shrinks — total grid width changes so
-// the whole calendar gets wider (with horizontal scroll on #weeks).
+// Drag-to-resize a week-row column. Stays in fractional (fr) mode so the
+// calendar always fits the viewport — widening one column narrows the
+// others rather than introducing horizontal scroll.
 function startColResize(e) {
   e.preventDefault();
   e.stopPropagation();
@@ -2382,35 +2373,21 @@ function startColResize(e) {
   if (!isFinite(colIdx)) return;
   const card = handle.closest('.day-card');
   if (!card) return;
-  // If we're still in fr mode, snapshot current rendered widths as our
-  // pixel baseline so the layout doesn't jump.
-  if (!state.weekColWidthsPx || state.weekColWidthsPx.length !== 8) {
-    const firstBodyRow = document.querySelector('[data-view-pane="month"] .week-row:not(.head)');
-    if (firstBodyRow) {
-      const kids = firstBodyRow.children;
-      const widths = [];
-      for (let i = 0; i < 8; i++) widths.push(kids[i] ? kids[i].offsetWidth : 130);
-      state.weekColWidthsPx = widths;
-      // Apply pixel template + mark rows .is-px so they take width: max-content
-      const tpl = widths.map(w => `${w.toFixed(0)}px`).join(' ');
-      document.querySelectorAll('[data-view-pane="month"] .week-row').forEach(r => {
-        r.style.gridTemplateColumns = tpl;
-        r.classList.add('is-px');
-      });
-    }
-  }
   const startX = e.clientX;
-  const startWidth = state.weekColWidthsPx[colIdx];
+  const startWidth = card.offsetWidth;
+  const startRatio = state.weekColRatios[colIdx];
   handle.classList.add('resizing');
   document.body.classList.add('resizing-col');
 
   function applyTpl() {
-    const tpl = state.weekColWidthsPx.map(w => `${Math.max(50, w).toFixed(0)}px`).join(' ');
+    const tpl = state.weekColRatios.map(r => `${Math.max(0.2, r).toFixed(3)}fr`).join(' ');
     document.querySelectorAll('[data-view-pane="month"] .week-row').forEach(r => r.style.gridTemplateColumns = tpl);
   }
   function onMove(ev) {
     const delta = ev.clientX - startX;
-    state.weekColWidthsPx[colIdx] = Math.max(50, startWidth + delta);
+    const newWidth = Math.max(60, startWidth + delta);
+    const newRatio = Math.max(0.2, startRatio * (newWidth / startWidth));
+    state.weekColRatios[colIdx] = newRatio;
     applyTpl();
   }
   function onUp() {
@@ -2438,15 +2415,13 @@ function renderMonth() {
   const today = todayIso();
   const host = document.getElementById('weeks');
   host.innerHTML = '';
-  // Build column template. If the user has dragged a column (pixel mode),
-  // use explicit pixel widths so the whole calendar grows wider and the
-  // #weeks container can scroll horizontally. Otherwise use fr ratios.
-  const usingPx = !!(state.weekColWidthsPx && state.weekColWidthsPx.length === 8);
-  const colTpl = usingPx
-    ? state.weekColWidthsPx.map(w => `${Math.max(50, w).toFixed(0)}px`).join(' ')
-    : (state.weekColRatios || [1,1,1,1,1,1,1,1.4]).map(r => `${Math.max(0.2, r).toFixed(3)}fr`).join(' ');
+  // Calendar always fits the viewport (no horizontal scroll). Columns
+  // use fractional ratios — dragging a column redistributes width between
+  // siblings rather than growing the whole grid.
+  const colTpl = (state.weekColRatios || [1,1,1,1,1,1,1,1.4])
+    .map(r => `${Math.max(0.2, r).toFixed(3)}fr`).join(' ');
   const headRow = document.createElement('div');
-  headRow.className = 'week-row head' + (usingPx ? ' is-px' : '');
+  headRow.className = 'week-row head';
   headRow.style.gridTemplateColumns = colTpl;
   WEEKDAYS_SHORT.forEach(w => {
     const c = document.createElement('div'); c.className = 'day-head'; c.textContent = w;
@@ -2458,7 +2433,7 @@ function renderMonth() {
 
   for (let wIdx = 0; wIdx < weeksCount; wIdx++) {
     const row = document.createElement('div');
-    row.className = 'week-row' + (usingPx ? ' is-px' : '');
+    row.className = 'week-row';
     row.style.gridTemplateColumns = colTpl;
     let anchorDay = wIdx * 7 - startOffset + 1;
     for (let dIdx = 0; dIdx < 7; dIdx++) {
@@ -4052,8 +4027,8 @@ document.getElementById('import-file').addEventListener('change', e => {
   reader.readAsText(f);
 });
 document.getElementById('reset-col-widths').addEventListener('click', () => {
-  state.weekColWidthsPx = null;
   state.weekColRatios = [1, 1, 1, 1, 1, 1, 1, 1.4];
+  state.weekColWidthsPx = null;
   saveState();
   if (state.activeView === 'month') renderMonth();
 });
