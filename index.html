@@ -1,0 +1,931 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>War Map · Agency Advanta</title>
+<style>
+  :root {
+    --bg: #0a0a0d;
+    --surface: rgba(255,255,255,0.04);
+    --surface-raised: rgba(255,255,255,0.06);
+    --surface-input: rgba(255,255,255,0.03);
+    --separator: rgba(255,255,255,0.05);
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.14);
+    --border-input: rgba(255,255,255,0.10);
+    --text: #f0f0f3;
+    --text-secondary: #c5c5cc;
+    --text-tertiary: #9a9aa3;
+    --accent: #d4a017;
+    --accent-hover: #eecf6d;
+    --accent-tint: rgba(212,160,23,0.14);
+    --good: #30d158;
+    --good-tint: rgba(48,209,88,0.15);
+    --warn: #ff9f0a;
+    --warn-tint: rgba(255,159,10,0.15);
+    --bad: #ff453a;
+    --bad-tint: rgba(255,69,58,0.15);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing: antialiased; font-feature-settings: "ss01" 1, "ss03" 1; }
+  body { min-height: 100vh; }
+  button { font-family: inherit; }
+
+  .app-shell {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    min-height: 100vh;
+  }
+  @media (max-width: 800px) { .app-shell { grid-template-columns: 1fr; } }
+
+  .sidebar {
+    background: rgba(0,0,0,0.35);
+    border-right: 1px solid var(--separator);
+    padding: 22px 14px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--text);
+    text-transform: uppercase;
+    margin-bottom: 22px;
+    padding: 0 8px;
+  }
+  .sidebar .logo .mark {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    color: #1a1a1a;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 800;
+  }
+  .sidebar .logo .sub { color: var(--text-tertiary); font-size: 10.5px; font-weight: 500; letter-spacing: 0.04em; }
+  .sidebar nav { display: flex; flex-direction: column; gap: 2px; }
+  .sidebar .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+  }
+  .sidebar .nav-item:hover { color: var(--text); background: var(--surface-raised); }
+  .sidebar .nav-item.active { background: var(--accent-tint); color: var(--accent-hover); }
+  .sidebar .nav-item .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-tertiary); }
+  .sidebar .nav-item.active .dot { background: var(--accent); }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 30;
+    background: rgba(10,10,13,0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--separator);
+    padding: 12px 28px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+  .topbar .crumb {
+    color: var(--text-tertiary);
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+  .topbar .crumb b { color: var(--text); font-weight: 700; }
+  .topbar .spacer { flex: 1; }
+  .topbar .status {
+    color: var(--text-tertiary);
+    font-size: 11.5px;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .topbar .status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--good); display: inline-block; }
+  .topbar .status .dot.saving { background: var(--warn); animation: pulse 0.8s infinite alternate; }
+  @keyframes pulse { from { opacity: 0.4 } to { opacity: 1 } }
+
+  .container {
+    padding: 28px 32px 80px;
+    max-width: 1480px;
+    margin: 0 auto;
+  }
+  .container.hidden { display: none; }
+  h1 { font-size: 30px; margin: 0 0 4px; letter-spacing: -0.02em; font-weight: 700; }
+  h2 { font-size: 20px; margin: 0 0 6px; letter-spacing: -0.01em; font-weight: 700; }
+  .page-sub { color: var(--text-tertiary); font-size: 13px; margin-bottom: 24px; }
+
+  /* ─── Dashboard (year view) ─────────────────────────────────────── */
+  .quarter-row {
+    display: grid;
+    grid-template-columns: 280px repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 1200px) { .quarter-row { grid-template-columns: 1fr; } }
+
+  .quarter-themes {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 14px 10px;
+    display: flex;
+    flex-direction: column;
+  }
+  .quarter-themes .qlbl {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--accent-hover);
+    margin-bottom: 8px;
+  }
+  .quarter-themes .qsub {
+    color: var(--text-tertiary);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 8px;
+  }
+  .quarter-themes textarea {
+    flex: 1;
+    min-height: 160px;
+    background: rgba(0,0,0,0.20);
+    border: 1px solid var(--border-input);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 12.5px;
+    line-height: 1.5;
+    padding: 10px 12px;
+    font-family: inherit;
+    resize: vertical;
+  }
+  .quarter-themes textarea:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-tint);
+  }
+
+  .month-tile {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    transition: border-color 0.15s;
+  }
+  .month-tile:hover { border-color: var(--border-strong); }
+  .month-tile .month-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .month-tile .month-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .month-tile .month-name:hover { color: var(--accent-hover); }
+  .month-tile .month-count {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+  .day-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+  }
+  .day-cell {
+    aspect-ratio: 1;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+  }
+  .day-cell:hover { background: var(--accent-tint); color: var(--accent-hover); border-color: var(--accent); }
+  .day-cell.has-tasks { background: var(--accent-tint); color: var(--accent-hover); border-color: rgba(212,160,23,0.30); font-weight: 600; }
+  .day-cell.has-tasks::after {
+    content: "";
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+  }
+  .day-cell.today {
+    box-shadow: 0 0 0 2px var(--accent-hover) inset;
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  /* ─── Month plan ────────────────────────────────────────────────── */
+  .month-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+  .month-toolbar .nav-arrow {
+    width: 32px; height: 32px;
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .month-toolbar .nav-arrow:hover { border-color: var(--accent); color: var(--accent-hover); }
+  .month-toolbar h1 { margin: 0; min-width: 240px; }
+  .month-toolbar .spacer { flex: 1; }
+  .month-toolbar button.ghost {
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    padding: 8px 14px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .month-toolbar button.ghost:hover { color: var(--text); border-color: var(--accent); }
+  .month-toolbar button.primary {
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: #1a1a1a;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .month-toolbar button.primary:hover { background: var(--accent-hover); }
+
+  .week-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr) 1.4fr;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .week-row.head {
+    margin-bottom: 6px;
+  }
+  .week-row.head .day-head {
+    color: var(--text-tertiary);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    padding: 4px 10px;
+  }
+  .day-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    min-height: 150px;
+    padding: 8px 10px 6px;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .day-card:focus-within { border-color: var(--accent); background: rgba(212,160,23,0.04); }
+  .day-card.empty { background: rgba(255,255,255,0.015); }
+  .day-card.today {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-tint);
+  }
+  .day-card .num {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .day-card.today .num { color: var(--accent-hover); }
+  .day-card .num small {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    font-weight: 600;
+    margin-left: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .day-card textarea {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 11.5px;
+    line-height: 1.45;
+    padding: 2px 0;
+    resize: none;
+    font-family: inherit;
+    outline: none;
+    min-height: 100px;
+  }
+  .day-card textarea::placeholder { color: var(--text-tertiary); opacity: 0.6; }
+
+  .day-card.weekly-goals {
+    background: rgba(212,160,23,0.04);
+    border-color: rgba(212,160,23,0.20);
+  }
+  .day-card.weekly-goals .num {
+    font-size: 11px;
+    color: var(--accent-hover);
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  /* Monthly projects + KPIs */
+  .month-footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 28px;
+  }
+  @media (max-width: 800px) { .month-footer { grid-template-columns: 1fr; } }
+  .footer-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .footer-card h3 {
+    margin: 0 0 12px;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+  }
+  .footer-card textarea {
+    width: 100%;
+    min-height: 120px;
+    background: rgba(0,0,0,0.20);
+    border: 1px solid var(--border-input);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 10px 12px;
+    font-family: inherit;
+    resize: vertical;
+  }
+  .footer-card textarea:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-tint);
+  }
+
+  /* ─── Settings ──────────────────────────────────────────────────── */
+  .settings-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin-bottom: 14px;
+  }
+  .settings-card h3 { margin: 0 0 12px; font-size: 15px; }
+  .settings-card .help { color: var(--text-tertiary); font-size: 12.5px; margin-top: 6px; }
+  .settings-card .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .settings-card button {
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .settings-card button:hover { border-color: var(--accent); color: var(--accent-hover); }
+  .settings-card button.danger { color: var(--bad); border-color: rgba(255,69,58,0.30); }
+  .settings-card button.danger:hover { background: rgba(255,69,58,0.10); }
+
+  /* Print rules */
+  @media print {
+    .sidebar, .topbar, .month-toolbar { display: none !important; }
+    body { background: #fff; color: #111; }
+    .day-card, .footer-card, .quarter-themes, .month-tile {
+      background: #fff !important;
+      border-color: #ddd !important;
+      color: #111 !important;
+    }
+    .day-card textarea, .quarter-themes textarea, .footer-card textarea {
+      color: #111 !important;
+      background: transparent !important;
+    }
+    .day-card .num, .quarter-themes .qlbl, .month-tile .month-name {
+      color: #111 !important;
+    }
+    .container { max-width: none; padding: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="logo">
+      <span class="mark">AA</span>
+      <span>
+        War Map<br/>
+        <span class="sub">Agency Advanta</span>
+      </span>
+    </div>
+    <nav id="sidebar-nav">
+      <button class="nav-item active" data-view="dashboard"><span class="dot"></span>2026 Dashboard</button>
+      <button class="nav-item" data-view="month"><span class="dot"></span>Month plan</button>
+      <button class="nav-item" data-view="settings"><span class="dot"></span>Settings</button>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div class="crumb" id="crumb"></div>
+      <div class="spacer"></div>
+      <div class="status"><span class="dot" id="save-dot"></span><span id="save-status">Saved</span></div>
+    </div>
+
+    <!-- Dashboard view -->
+    <div class="container" data-view-pane="dashboard">
+      <h1>2026 War Map</h1>
+      <div class="page-sub">Quarterly themes on the left · click any day to jump to that month's plan.</div>
+      <div id="quarters"></div>
+    </div>
+
+    <!-- Month plan view -->
+    <div class="container hidden" data-view-pane="month">
+      <div class="month-toolbar">
+        <button class="nav-arrow" id="prev-month" title="Previous month">‹</button>
+        <h1 id="month-title">—</h1>
+        <button class="nav-arrow" id="next-month" title="Next month">›</button>
+        <div class="spacer"></div>
+        <button class="ghost" id="today-btn">Today</button>
+        <button class="primary" id="print-btn">Print / Save as PDF</button>
+      </div>
+      <div id="weeks"></div>
+      <div class="month-footer">
+        <div class="footer-card">
+          <h3>Main projects</h3>
+          <textarea id="main-projects" placeholder="e.g. Activate AI System + Launch Accountability System + Deadline"></textarea>
+        </div>
+        <div class="footer-card">
+          <h3>KPIs</h3>
+          <textarea id="main-kpis" placeholder="e.g. Source 60/100 Linkedin Accounts"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings view -->
+    <div class="container hidden" data-view-pane="settings">
+      <h1>Settings</h1>
+      <div class="page-sub">Import, export, and reset your war map data.</div>
+      <div class="settings-card">
+        <h3>Data</h3>
+        <div class="row">
+          <button id="export-json">Export JSON</button>
+          <button id="import-json">Import JSON</button>
+          <input type="file" id="import-file" accept="application/json" style="display:none" />
+          <button id="reset-seed">Reset to seed (2026 + May)</button>
+          <button class="danger" id="wipe-all">Wipe everything</button>
+        </div>
+        <div class="help">State is autosaved to your browser's localStorage (key: <code>warMap_v1</code>). Use Export JSON to back it up.</div>
+      </div>
+      <div class="settings-card">
+        <h3>About</h3>
+        <div class="help">Built for Josiah · Agency Advanta · mirrors the Josiah War Map 2026 spreadsheet structure (year dashboard + monthly Mon–Sun planner with weekly goals and monthly projects/KPIs).</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────
+// Seed data — parsed from the user's CSVs (Dashboard + MAY)
+// ─────────────────────────────────────────────────────────────────────
+const SEED = {
+  year: 2026,
+  quarters: {
+    Q1: [
+      'QSHOWS 8/Day | LI +40 | SMS & Email 10k/day | Quality Fix Linkedin VA System',
+      'Program: Email & 2 Calls/Week',
+      'Delegate Admin, PA, Lead Nurturing, & CSM Ramp',
+      '85KG, Social Group & Clothing',
+      'Sales Management System = 20% SCR & Marketing Removal',
+      'Hiring Sales Reps & SDR Pool & Setter Manager | 2 Hours/day 4hr work week Removal CSM Calls',
+      'Hiring System Fixed Skin',
+    ].join('\n'),
+    Q2: [
+      'Revenue 50k Prof: Sales v2 Update + Sale RepOps: IP Box + Notion Centralisation',
+      'Personal: 80KG',
+      'CSM: 75% Clients On 3Bookings/Week',
+      'OPS: Fix Finance + Comms + Tracking',
+    ].join('\n'),
+    Q3: ['Limassol Move'].join('\n'),
+    Q4: '',
+  },
+  // Per-day notes — keys are 'YYYY-MM-DD'
+  days: {
+    '2026-05-01': 'BDAY OOO\nPlan May + 24th',
+    '2026-05-02': 'BDAY OOO\nPlan May + 24th',
+    '2026-05-03': 'BDAY OOO\nPlan May + 24th',
+    '2026-05-04': 'Payday team',
+    '2026-05-05': 'Payday team\nReview revenue and calls.\nCSM + AI Hub + Diana',
+    '2026-05-06': 'May + 24th Plan',
+    '2026-05-07': 'Funnel For Linkedin Accounts\nCar + Laundry\nReview John +',
+    '2026-05-08': 'Automate Tracking Sales Team + L10\nZahi\nCar + Laundry',
+    '2026-05-09': 'L10',
+    '2026-05-10': 'Mushroom',
+    '2026-05-11': 'Client Results\nCSM + Sales Review\nL10',
+    '2026-05-12': 'Client Results\nSales Tracking + Contract\nFinances',
+    '2026-05-13': 'Client Results\nSales Tracking\nFinances\nDrop Car',
+    '2026-05-14': 'Sales Tracking\nFinances',
+    '2026-05-15': 'Sales Tracker\nCSM + Sales Review',
+    '2026-05-16': 'L10 — Wardrobe Review',
+    '2026-05-17': 'Mushroom\nScorecard + Team Meeting',
+    '2026-05-18': 'Write AI Plans / Feedback + finance plan\nSOP on tracker + LI sourcing\nResults',
+    '2026-05-19': 'Results + Rev',
+    '2026-05-20': 'Results\nRevenue + LI + Payments',
+    '2026-05-21': 'Results\nRevenue',
+    '2026-05-22': 'Results + Rev',
+    '2026-05-23': 'L10 + Plan May',
+  },
+  // Per-week goals — keys are the Monday ISO date 'YYYY-MM-DD'
+  weeklyGoals: {
+    '2026-04-27': '',                                                       // partial week (May 1–3)
+    '2026-05-04': 'May Plan + AI 3-4 Projects/week\nScale LI System +',
+    '2026-05-11': 'Results + Finances\nNew Sales Tracker',
+    '2026-05-18': 'AI Project + double LinkedIn team\nLaunch LI/Email?',
+    '2026-05-25': '',
+  },
+  // Monthly projects + KPIs — keys are 'YYYY-MM'
+  monthlyProjects: {
+    '2026-05': [
+      'Activate AI System + Launch Accountability System + Deadline',
+      'New LI System + New Hires',
+      'Put Daily Roleplay/Meetings + New Tracking AI System',
+      '3x Padel/Gym + New Tracking AI System',
+    ].join('\n'),
+  },
+  monthlyKPIs: {
+    '2026-05': [
+      'Complete AI CSM Projects For MAY',
+      'Source 60/100 LinkedIn Accounts',
+      'Get Zahi: Show 60%, 2nd call booked rate: 70% + John 40% SCR',
+      '80KG',
+    ].join('\n'),
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────
+// State + persistence
+// ─────────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'warMap_v1';
+
+function defaultState() {
+  return {
+    year: SEED.year,
+    activeView: 'dashboard',
+    activeMonth: 4,        // 0-indexed; 4 = May
+    quarters: { ...SEED.quarters },
+    days: { ...SEED.days },
+    weeklyGoals: { ...SEED.weeklyGoals },
+    monthlyProjects: { ...SEED.monthlyProjects },
+    monthlyKPIs: { ...SEED.monthlyKPIs },
+  };
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultState();
+    const s = JSON.parse(raw);
+    const d = defaultState();
+    return {
+      ...d,
+      ...s,
+      quarters: { ...d.quarters, ...(s.quarters || {}) },
+      days: { ...d.days, ...(s.days || {}) },
+      weeklyGoals: { ...d.weeklyGoals, ...(s.weeklyGoals || {}) },
+      monthlyProjects: { ...d.monthlyProjects, ...(s.monthlyProjects || {}) },
+      monthlyKPIs: { ...d.monthlyKPIs, ...(s.monthlyKPIs || {}) },
+    };
+  } catch (e) { console.error('loadState failed', e); return defaultState(); }
+}
+
+let state = loadState();
+
+let saveTimer;
+function setSaveStatus(label, saving) {
+  document.getElementById('save-status').textContent = label;
+  document.getElementById('save-dot').classList.toggle('saving', !!saving);
+}
+function saveState() {
+  setSaveStatus('Saving…', true);
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      setSaveStatus('Saved', false);
+    } catch (e) {
+      setSaveStatus('Save error', false);
+      console.error(e);
+    }
+  }, 220);
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Date helpers
+// ─────────────────────────────────────────────────────────────────────
+const MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_SHORT = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const WEEKDAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const WEEKDAYS_SHORT = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+function isoDate(y, m, d) { return `${y}-${pad2(m+1)}-${pad2(d)}`; }
+function isoMonth(y, m) { return `${y}-${pad2(m+1)}`; }
+function daysInMonth(y, m) { return new Date(y, m+1, 0).getDate(); }
+// ISO weekday: Mon=0, Sun=6
+function weekdayIso(y, m, d) {
+  const w = new Date(y, m, d).getDay();   // Sun=0
+  return w === 0 ? 6 : w - 1;
+}
+function mondayOfWeek(y, m, d) {
+  const dt = new Date(y, m, d);
+  const w = dt.getDay();
+  const diff = w === 0 ? -6 : 1 - w;
+  dt.setDate(dt.getDate() + diff);
+  return isoDate(dt.getFullYear(), dt.getMonth(), dt.getDate());
+}
+function todayIso() {
+  const d = new Date();
+  return isoDate(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// View switching
+// ─────────────────────────────────────────────────────────────────────
+function setView(v) {
+  state.activeView = v;
+  saveState();
+  document.querySelectorAll('.sidebar .nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+  document.querySelectorAll('[data-view-pane]').forEach(p => p.classList.toggle('hidden', p.dataset.viewPane !== v));
+  updateCrumb();
+  if (v === 'dashboard') renderDashboard();
+  if (v === 'month') renderMonth();
+}
+function updateCrumb() {
+  const cr = document.getElementById('crumb');
+  if (state.activeView === 'dashboard') cr.innerHTML = `War Map · <b>${state.year} Dashboard</b>`;
+  else if (state.activeView === 'month') cr.innerHTML = `War Map · <b>${MONTHS_FULL[state.activeMonth]} ${state.year}</b>`;
+  else cr.innerHTML = `War Map · <b>Settings</b>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Dashboard render
+// ─────────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const host = document.getElementById('quarters');
+  const quarters = [
+    { q: 'Q1', months: [0, 1, 2] },
+    { q: 'Q2', months: [3, 4, 5] },
+    { q: 'Q3', months: [6, 7, 8] },
+    { q: 'Q4', months: [9, 10, 11] },
+  ];
+  const today = todayIso();
+  host.innerHTML = quarters.map(({ q, months }) => {
+    const theme = (state.quarters[q] || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return `<div class="quarter-row">
+      <div class="quarter-themes">
+        <div class="qlbl">${q}</div>
+        <div class="qsub">${months.map(m => MONTHS_SHORT[m]).join(' · ')}</div>
+        <textarea data-q-theme="${q}" placeholder="Add quarterly goals & themes…">${theme}</textarea>
+      </div>
+      ${months.map(m => {
+        const totalDays = daysInMonth(state.year, m);
+        const filledDays = Array.from({ length: totalDays }, (_, i) => isoDate(state.year, m, i + 1))
+          .filter(id => (state.days[id] || '').trim()).length;
+        return `<div class="month-tile">
+          <div class="month-head">
+            <div class="month-name" data-jump-month="${m}">${MONTHS_SHORT[m]}</div>
+            <div class="month-count">${filledDays}/${totalDays} filled</div>
+          </div>
+          <div class="day-grid">
+            ${Array.from({ length: totalDays }, (_, i) => {
+              const day = i + 1;
+              const id = isoDate(state.year, m, day);
+              const hasTasks = !!(state.days[id] || '').trim();
+              const isToday = id === today;
+              return `<div class="day-cell ${hasTasks ? 'has-tasks' : ''} ${isToday ? 'today' : ''}" data-jump-day="${id}" title="${id}${hasTasks ? ' — has tasks' : ''}">${day}</div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+  // Wire quarter theme inputs
+  host.querySelectorAll('[data-q-theme]').forEach(ta => {
+    ta.addEventListener('input', e => {
+      state.quarters[e.target.dataset.qTheme] = e.target.value;
+      saveState();
+    });
+  });
+  // Wire jumps
+  host.querySelectorAll('[data-jump-month]').forEach(el => {
+    el.addEventListener('click', () => {
+      state.activeMonth = Number(el.dataset.jumpMonth);
+      setView('month');
+    });
+  });
+  host.querySelectorAll('[data-jump-day]').forEach(el => {
+    el.addEventListener('click', () => {
+      const [y, m] = el.dataset.jumpDay.split('-').map(Number);
+      state.activeMonth = m - 1;
+      setView('month');
+    });
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Month plan render
+// ─────────────────────────────────────────────────────────────────────
+function renderMonth() {
+  const y = state.year;
+  const m = state.activeMonth;
+  document.getElementById('month-title').textContent = `${MONTHS_FULL[m]} ${y}`;
+  // Compute the week rows. Each row covers a Mon–Sun span.
+  // First Monday on/before day 1; last Sunday on/after last day.
+  const total = daysInMonth(y, m);
+  const firstWeekdayIso = weekdayIso(y, m, 1);  // 0=Mon
+  // Calendar grid starts at Monday before day 1 (in same or prev month).
+  // We'll only render the days *inside* the current month (others stay blank cells).
+  const startOffset = firstWeekdayIso;  // number of blank cells before day 1
+  // Number of week rows
+  const totalCells = startOffset + total;
+  const weeksCount = Math.ceil(totalCells / 7);
+
+  const today = todayIso();
+  const host = document.getElementById('weeks');
+  host.innerHTML = `<div class="week-row head">
+    ${WEEKDAYS_SHORT.map(d => `<div class="day-head">${d}</div>`).join('')}
+    <div class="day-head" style="text-align:right">Weekly Goals</div>
+  </div>` +
+  Array.from({ length: weeksCount }, (_, wIdx) => {
+    // Days in this week-row (positions 0..6)
+    const cells = Array.from({ length: 7 }, (_, dIdx) => {
+      const cellIndex = wIdx * 7 + dIdx;
+      const dayNum = cellIndex - startOffset + 1;
+      if (dayNum < 1 || dayNum > total) {
+        return `<div class="day-card empty"></div>`;
+      }
+      const id = isoDate(y, m, dayNum);
+      const val = (state.days[id] || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const isToday = id === today;
+      return `<div class="day-card ${isToday ? 'today' : ''}" data-day-id="${id}">
+        <div class="num">${dayNum}${isToday ? ' <small>today</small>' : ''}</div>
+        <textarea data-day-input="${id}" placeholder="…">${val}</textarea>
+      </div>`;
+    }).join('');
+    // Anchor Monday for this week (or any present day → backtrack)
+    let anchorDay = wIdx * 7 - startOffset + 1;
+    if (anchorDay < 1) anchorDay = 1;
+    const monday = mondayOfWeek(y, m, anchorDay);
+    const wg = (state.weeklyGoals[monday] || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const wgHtml = `<div class="day-card weekly-goals" data-week-monday="${monday}">
+      <div class="num">Week of ${monday.slice(5)}</div>
+      <textarea data-week-input="${monday}" placeholder="Weekly goals…">${wg}</textarea>
+    </div>`;
+    return `<div class="week-row">${cells}${wgHtml}</div>`;
+  }).join('');
+
+  // Wire day textareas
+  host.querySelectorAll('[data-day-input]').forEach(ta => {
+    ta.addEventListener('input', e => {
+      const id = e.target.dataset.dayInput;
+      const v = e.target.value;
+      if (v) state.days[id] = v; else delete state.days[id];
+      saveState();
+    });
+  });
+  // Wire weekly-goal textareas
+  host.querySelectorAll('[data-week-input]').forEach(ta => {
+    ta.addEventListener('input', e => {
+      const id = e.target.dataset.weekInput;
+      const v = e.target.value;
+      if (v) state.weeklyGoals[id] = v; else delete state.weeklyGoals[id];
+      saveState();
+    });
+  });
+  // Render monthly footer
+  const monthKey = isoMonth(y, m);
+  document.getElementById('main-projects').value = state.monthlyProjects[monthKey] || '';
+  document.getElementById('main-kpis').value = state.monthlyKPIs[monthKey] || '';
+  updateCrumb();
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Wiring
+// ─────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.sidebar .nav-item').forEach(b => {
+  b.addEventListener('click', () => setView(b.dataset.view));
+});
+document.getElementById('prev-month').addEventListener('click', () => {
+  if (state.activeMonth === 0) { state.year--; state.activeMonth = 11; }
+  else state.activeMonth--;
+  saveState();
+  renderMonth();
+});
+document.getElementById('next-month').addEventListener('click', () => {
+  if (state.activeMonth === 11) { state.year++; state.activeMonth = 0; }
+  else state.activeMonth++;
+  saveState();
+  renderMonth();
+});
+document.getElementById('today-btn').addEventListener('click', () => {
+  const d = new Date();
+  state.year = d.getFullYear();
+  state.activeMonth = d.getMonth();
+  saveState();
+  renderMonth();
+});
+document.getElementById('print-btn').addEventListener('click', () => window.print());
+
+document.getElementById('main-projects').addEventListener('input', e => {
+  const k = isoMonth(state.year, state.activeMonth);
+  if (e.target.value) state.monthlyProjects[k] = e.target.value;
+  else delete state.monthlyProjects[k];
+  saveState();
+});
+document.getElementById('main-kpis').addEventListener('input', e => {
+  const k = isoMonth(state.year, state.activeMonth);
+  if (e.target.value) state.monthlyKPIs[k] = e.target.value;
+  else delete state.monthlyKPIs[k];
+  saveState();
+});
+
+// ─── Settings ────────────────────────────────────────────────────────
+document.getElementById('export-json').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `war-map-${state.year}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+document.getElementById('import-json').addEventListener('click', () => document.getElementById('import-file').click());
+document.getElementById('import-file').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const parsed = JSON.parse(ev.target.result);
+      state = { ...defaultState(), ...parsed };
+      saveState();
+      setView(state.activeView || 'dashboard');
+    } catch (err) { alert('Could not parse JSON: ' + err.message); }
+  };
+  reader.readAsText(f);
+});
+document.getElementById('reset-seed').addEventListener('click', () => {
+  if (!confirm('Reset everything to the seed (2026 themes + May tasks)? Your current edits will be lost.')) return;
+  state = defaultState();
+  saveState();
+  setView('dashboard');
+});
+document.getElementById('wipe-all').addEventListener('click', () => {
+  if (!confirm('Wipe ALL data and start blank (no seed)?')) return;
+  state = { year: new Date().getFullYear(), activeView: 'dashboard', activeMonth: new Date().getMonth(),
+            quarters: { Q1: '', Q2: '', Q3: '', Q4: '' }, days: {}, weeklyGoals: {}, monthlyProjects: {}, monthlyKPIs: {} };
+  saveState();
+  setView('dashboard');
+});
+
+// ─── Boot ────────────────────────────────────────────────────────────
+setView(state.activeView || 'dashboard');
+</script>
+</body>
+</html>
