@@ -1827,17 +1827,20 @@ function renderCells(container, opts) {
       inp.addEventListener('blur', commit);
     });
     cell.appendChild(text);
-    // Recurring chip
-    if (t.repeat) {
-      const r = document.createElement('span'); r.className = 'repeat-chip';
-      r.textContent = `↻ ${t.repeat}`;
-      cell.appendChild(r);
-    }
-    // Scheduled chip
-    if (t.scheduledFor) {
-      const s = document.createElement('span'); s.className = 'sched-chip';
-      s.textContent = `📅 ${t.scheduledFor.slice(5)}`;
-      cell.appendChild(s);
+    // Recurring + scheduled chips — only when NOT colour-coding by bucket
+    // (in views that use outline-colour, all chips are suppressed for a
+    // uniform, calm look).
+    if (!colorByBucket) {
+      if (t.repeat) {
+        const r = document.createElement('span'); r.className = 'repeat-chip';
+        r.textContent = `↻ ${t.repeat}`;
+        cell.appendChild(r);
+      }
+      if (t.scheduledFor) {
+        const s = document.createElement('span'); s.className = 'sched-chip';
+        s.textContent = `📅 ${t.scheduledFor.slice(5)}`;
+        cell.appendChild(s);
+      }
     }
     // Sub-task count badge
     if (subP.total) {
@@ -2195,6 +2198,7 @@ function renderMonth() {
         maxText: 40,
         addLabel: '+ Task',
         source: 'day', key: id,
+        colorByBucket: true,
       });
       card.appendChild(cellsEl);
       makeDropTarget(card, { source: 'day', key: id });
@@ -2220,6 +2224,7 @@ function renderMonth() {
       maxText: 60,
       addLabel: '+ Goal',
       source: 'week', key: monday,
+      colorByBucket: true,
     }));
     makeDropTarget(wg, { source: 'week', key: monday });
     wg.addEventListener('click', ev => {
