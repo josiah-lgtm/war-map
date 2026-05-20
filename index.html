@@ -1287,6 +1287,176 @@
   .chart-card .bar:hover { opacity: 0.7; }
   .chart-card .week-label { fill: var(--text-tertiary); font-size: 9.5px; }
 
+  /* ─────────────────────────────────────────────────────────────────
+     COMPACT MODE — dashboard + month-plan packed so the whole page is
+     visible without scrolling on a standard laptop (~1280–1440 x 800+).
+     Fonts stay legible; only spacing / sizing tightens up.
+     ───────────────────────────────────────────────────────────────── */
+  [data-view-pane="dashboard"], [data-view-pane="month"] {
+    padding: 10px 22px 12px;
+  }
+  [data-view-pane="dashboard"] h1, [data-view-pane="month"] h1 { font-size: 20px; margin: 0; }
+  [data-view-pane="dashboard"] .page-sub, [data-view-pane="month"] .page-sub {
+    display: none;     /* sub-text hidden in compact mode to save vertical space */
+  }
+
+  /* Year progress — more compact + bar smaller */
+  [data-view-pane="dashboard"] .year-progress {
+    padding: 9px 14px;
+    margin-bottom: 10px;
+    gap: 14px;
+  }
+  [data-view-pane="dashboard"] .year-progress .yp-bar-wrap { height: 9px; margin-top: 6px; }
+  [data-view-pane="dashboard"] .year-progress .yp-stat .num { font-size: 17px; }
+  [data-view-pane="dashboard"] .year-progress .yp-stat .lbl { font-size: 9.5px; margin-left: 4px; }
+  [data-view-pane="dashboard"] .year-progress .yp-stats { gap: 16px; }
+  [data-view-pane="dashboard"] .year-progress .yp-left { font-size: 12px; min-width: 200px; }
+  [data-view-pane="dashboard"] .year-progress .yp-left .head { font-size: 10px; margin-bottom: 3px; }
+
+  /* Bucket summary tiles — denser */
+  [data-view-pane="dashboard"] .bucket-summary,
+  [data-view-pane="month"] .bucket-summary {
+    gap: 7px; margin-bottom: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  }
+  [data-view-pane="dashboard"] .bucket-tile,
+  [data-view-pane="month"] .bucket-tile {
+    padding: 7px 12px; gap: 8px;
+  }
+  [data-view-pane="dashboard"] .bucket-tile .bt-icon,
+  [data-view-pane="month"] .bucket-tile .bt-icon { font-size: 13px; }
+  [data-view-pane="dashboard"] .bucket-tile .bt-name,
+  [data-view-pane="month"] .bucket-tile .bt-name { font-size: 10px; }
+  [data-view-pane="dashboard"] .bucket-tile .bt-count,
+  [data-view-pane="month"] .bucket-tile .bt-count { font-size: 15px; }
+  [data-view-pane="dashboard"] .bucket-tile .bt-sub,
+  [data-view-pane="month"] .bucket-tile .bt-sub { font-size: 9.5px; }
+
+  /* Quarter rows — minimal padding, themes shrink to fit. Don't stretch
+     children vertically (otherwise month tiles match the tall themes col). */
+  [data-view-pane="dashboard"] .quarter-row {
+    grid-template-columns: 220px repeat(3, 1fr);
+    gap: 8px; margin-bottom: 8px;
+    align-items: start;
+  }
+  [data-view-pane="dashboard"] .quarter-themes {
+    padding: 9px 11px; gap: 4px;
+    max-height: 165px;
+    overflow-y: auto;
+  }
+  [data-view-pane="dashboard"] .quarter-themes::-webkit-scrollbar { width: 4px; }
+  [data-view-pane="dashboard"] .quarter-themes::-webkit-scrollbar-thumb { background: rgba(212,160,23,0.30); border-radius: 999px; }
+  [data-view-pane="dashboard"] .quarter-themes .qhead { gap: 8px; }
+  [data-view-pane="dashboard"] .quarter-themes .qlbl { font-size: 14px; }
+  [data-view-pane="dashboard"] .quarter-themes .qsub { font-size: 9.5px; }
+  [data-view-pane="dashboard"] .quarter-themes .cell {
+    font-size: 10.5px; padding: 3px 7px; min-height: 20px;
+    overflow: hidden;
+  }
+  [data-view-pane="dashboard"] .quarter-themes .cell .text,
+  [data-view-pane="month"] .day-card .cell .text,
+  [data-view-pane="month"] .footer-card .cell .text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  [data-view-pane="dashboard"] .quarter-themes .cell,
+  [data-view-pane="month"] .day-card .cell,
+  [data-view-pane="month"] .footer-card .cell {
+    overflow: hidden;
+  }
+  [data-view-pane="dashboard"] .quarter-themes .add-cell {
+    font-size: 10px; padding: 3px 7px;
+  }
+
+  /* Month tiles — tight day grids */
+  [data-view-pane="dashboard"] .month-tile { padding: 9px 11px; }
+  [data-view-pane="dashboard"] .month-tile .month-head { margin-bottom: 6px; }
+  [data-view-pane="dashboard"] .month-tile .month-name { font-size: 12px; }
+  [data-view-pane="dashboard"] .month-tile .month-count { font-size: 10px; }
+  [data-view-pane="dashboard"] .day-grid { gap: 3px; grid-template-columns: repeat(7, 1fr); }
+  [data-view-pane="dashboard"] .day-cell {
+    font-size: 10px;
+    aspect-ratio: auto;          /* override default square — would explode in height */
+    height: 22px;
+  }
+  [data-view-pane="dashboard"] .day-cell.has-tasks::after { width: 3px; height: 3px; bottom: 2px; right: 2px; }
+
+  /* Month plan toolbar */
+  [data-view-pane="month"] .month-toolbar {
+    margin-bottom: 10px; gap: 8px;
+  }
+  [data-view-pane="month"] .month-toolbar h1 { font-size: 22px; min-width: 180px; }
+  [data-view-pane="month"] .month-toolbar .nav-arrow { width: 28px; height: 28px; font-size: 12px; }
+  [data-view-pane="month"] .month-toolbar button.ghost,
+  [data-view-pane="month"] .month-toolbar button.primary {
+    padding: 6px 11px; font-size: 12px;
+  }
+
+  /* Monthly mantra — slim one-line strip */
+  [data-view-pane="month"] .month-mantra {
+    padding: 7px 14px; margin: 0 0 8px;
+  }
+  [data-view-pane="month"] .month-mantra .mlabel {
+    font-size: 9px; margin-bottom: 2px;
+  }
+  [data-view-pane="month"] .month-mantra textarea {
+    font-size: 15px; min-height: 20px; line-height: 1.2;
+  }
+
+  /* Week rows + day cards — denser */
+  [data-view-pane="month"] .week-row {
+    grid-template-columns: repeat(7, 1fr) 1.15fr;
+    gap: 5px; margin-bottom: 5px;
+  }
+  [data-view-pane="month"] .week-row.head { margin-bottom: 4px; }
+  [data-view-pane="month"] .week-row.head .day-head {
+    font-size: 9.5px; padding: 2px 6px;
+  }
+  [data-view-pane="month"] .day-card {
+    min-height: 70px;
+    max-height: 88px;
+    padding: 5px 7px 4px;
+    gap: 3px;
+    overflow: hidden;
+  }
+  [data-view-pane="month"] .day-card .cells {
+    overflow: hidden;
+  }
+  [data-view-pane="month"] .day-card .num {
+    font-size: 13px; margin-bottom: 1px;
+  }
+  [data-view-pane="month"] .day-card .num small { font-size: 8.5px; }
+  [data-view-pane="month"] .day-card .cells { gap: 2px; }
+  [data-view-pane="month"] .day-card .cell {
+    font-size: 10.5px; padding: 3px 7px; min-height: 20px;
+  }
+  [data-view-pane="month"] .day-card .add-cell {
+    font-size: 10px; padding: 3px 7px;
+  }
+  [data-view-pane="month"] .day-card.weekly-goals .num { font-size: 10px; }
+  [data-view-pane="month"] .day-card.empty { min-height: 60px; }
+
+  /* Monthly footer — compact and capped so the whole page fits */
+  [data-view-pane="month"] .month-footer {
+    gap: 10px; margin-top: 10px;
+  }
+  [data-view-pane="month"] .footer-card {
+    padding: 8px 12px; gap: 4px;
+    max-height: 130px;
+    overflow-y: auto;
+  }
+  [data-view-pane="month"] .footer-card::-webkit-scrollbar { width: 4px; }
+  [data-view-pane="month"] .footer-card::-webkit-scrollbar-thumb { background: rgba(212,160,23,0.30); border-radius: 999px; }
+  [data-view-pane="month"] .footer-card h3 { font-size: 10.5px; }
+  [data-view-pane="month"] .footer-card .cell {
+    font-size: 11.5px; padding: 3px 8px; min-height: 22px;
+  }
+
+  /* Smaller topbar so we get a few more vertical px */
+  .topbar { padding: 8px 24px; }
+
   /* Print styles */
   @media print {
     .sidebar, .topbar, .month-toolbar, .modal-overlay { display: none !important; }
@@ -1577,18 +1747,30 @@ function migrateState(s) {
 
 let state = loadState();
 let saveTimer;
+let pendingSave = false;
 function setSaveStatus(label, saving) {
   document.getElementById('save-status').textContent = label;
   document.getElementById('save-dot').classList.toggle('saving', !!saving);
 }
+function flushSave() {
+  if (!pendingSave) return;
+  clearTimeout(saveTimer);
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); setSaveStatus('Saved', false); pendingSave = false; }
+  catch (e) { setSaveStatus('Save error', false); console.error(e); }
+}
 function saveState() {
+  // Short debounce so typing flushes within ~80ms; flushed immediately on
+  // tab hide, blur, or unload to guarantee nothing is ever lost.
+  pendingSave = true;
   setSaveStatus('Saving…', true);
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); setSaveStatus('Saved', false); }
-    catch (e) { setSaveStatus('Save error', false); console.error(e); }
-  }, 220);
+  saveTimer = setTimeout(flushSave, 80);
 }
+// Flush on the events that would otherwise drop the pending write.
+window.addEventListener('beforeunload', flushSave);
+window.addEventListener('pagehide', flushSave);
+window.addEventListener('blur', flushSave);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushSave(); });
 
 // ─────────────────────────────────────────────────────────────────────
 // Date helpers
