@@ -1123,6 +1123,168 @@
   }
   .cell .text-input:focus { outline: none; box-shadow: 0 0 0 2px var(--accent-tint); }
 
+  /* ─── Sidebar collapse ──────────────────────────────────────────── */
+  .app-shell.sb-collapsed { grid-template-columns: 60px 1fr; }
+  .app-shell.sb-collapsed .sidebar { padding: 18px 8px; }
+  .app-shell.sb-collapsed .sidebar .logo .sub,
+  .app-shell.sb-collapsed .sidebar .logo span:not(.mark),
+  .app-shell.sb-collapsed .sidebar .nav-item span:not(.dot) { display: none; }
+  .app-shell.sb-collapsed .sidebar .logo { justify-content: center; margin-bottom: 16px; padding: 0; }
+  .app-shell.sb-collapsed .sidebar .nav-item { justify-content: center; padding: 9px 6px; }
+  .app-shell.sb-collapsed .sidebar .nav-item .dot { margin: 0; width: 8px; height: 8px; }
+  .sb-toggle {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-tertiary);
+    width: 100%;
+    padding: 6px 0;
+    border-radius: 7px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    margin-bottom: 12px;
+    transition: color 0.12s, border-color 0.12s;
+  }
+  .sb-toggle:hover { color: var(--accent-hover); border-color: var(--accent); }
+
+  /* ─── Cell edit/delete buttons (visible on hover) ───────────────── */
+  .cell .row-act {
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    padding: 1px 5px;
+    font-size: 11px;
+    line-height: 1;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.12s, color 0.12s, background 0.12s;
+    font-family: inherit;
+    flex-shrink: 0;
+  }
+  .cell:hover .row-act { opacity: 0.85; }
+  .cell .row-act.edit:hover { background: var(--accent-tint); color: var(--accent-hover); }
+  .cell .row-act.del:hover { background: rgba(255,69,58,0.16); color: var(--bad); }
+
+  /* Coloured task variant (used in week-day inline cards) */
+  .cell.coloured {
+    background: var(--task-color-tint, rgba(255,255,255,0.03));
+    border-color: var(--task-color, rgba(255,255,255,0.06));
+  }
+  .cell.coloured:hover {
+    background: var(--task-color-tint-strong, var(--accent-tint));
+    border-color: var(--task-color, rgba(212,160,23,0.30));
+  }
+
+  /* ─── Monthly mantra ────────────────────────────────────────────── */
+  .month-mantra {
+    background: linear-gradient(135deg, rgba(212,160,23,0.08), rgba(212,160,23,0.02));
+    border: 1px solid rgba(212,160,23,0.20);
+    border-radius: 14px;
+    padding: 22px 28px;
+    margin: 0 0 22px;
+    position: relative;
+  }
+  .month-mantra .mlabel {
+    color: var(--accent);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+  .month-mantra textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    padding: 0;
+    resize: none;
+    font-family: inherit;
+    min-height: 38px;
+    font-style: italic;
+  }
+  .month-mantra textarea:focus { outline: none; }
+  .month-mantra textarea::placeholder { color: var(--text-tertiary); opacity: 0.55; font-style: italic; }
+
+  /* ─── Bucket summary (dashboard + month) ────────────────────────── */
+  .bucket-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+  .bucket-tile {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+    overflow: hidden;
+    cursor: default;
+  }
+  .bucket-tile::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: var(--bucket-color, var(--accent));
+  }
+  .bucket-tile .bt-icon { font-size: 17px; }
+  .bucket-tile .bt-meta { flex: 1; min-width: 0; }
+  .bucket-tile .bt-name {
+    font-size: 12px; font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .bucket-tile .bt-count {
+    font-size: 18px; font-weight: 800;
+    color: var(--bucket-color, var(--accent-hover));
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .bucket-tile .bt-sub {
+    font-size: 10.5px; color: var(--text-tertiary);
+  }
+
+  /* ─── Habit graphs ──────────────────────────────────────────────── */
+  .habit-charts {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: 1fr;
+    margin-top: 8px;
+  }
+  .chart-card {
+    background: rgba(0,0,0,0.18);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .chart-card h4 {
+    margin: 0 0 10px;
+    font-size: 11.5px; color: var(--text-tertiary);
+    text-transform: uppercase; letter-spacing: 0.07em; font-weight: 700;
+  }
+  .chart-card svg { width: 100%; height: auto; display: block; }
+  .chart-card .axis text { fill: var(--text-tertiary); font-size: 10px; }
+  .chart-card .grid line { stroke: rgba(255,255,255,0.04); stroke-width: 1; }
+  .chart-card .line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .chart-card .area { fill: var(--accent); opacity: 0.10; }
+  .chart-card .target-line { stroke: var(--good); stroke-width: 1.5; stroke-dasharray: 4 4; }
+  .chart-card .target-label { fill: var(--good); font-size: 10px; }
+  .chart-card .dot { fill: var(--accent-hover); }
+  .chart-card .bar { fill: var(--accent); transition: opacity 0.2s; }
+  .chart-card .bar.zero { fill: rgba(255,255,255,0.06); }
+  .chart-card .bar:hover { opacity: 0.7; }
+  .chart-card .week-label { fill: var(--text-tertiary); font-size: 9.5px; }
+
   /* Print styles */
   @media print {
     .sidebar, .topbar, .month-toolbar, .modal-overlay { display: none !important; }
@@ -1135,17 +1297,18 @@
 </style>
 </head>
 <body>
-<div class="app-shell">
+<div class="app-shell" id="app-shell">
   <aside class="sidebar">
+    <button class="sb-toggle" id="sb-toggle" title="Collapse / expand sidebar">«</button>
     <div class="logo">
       <span class="mark">AA</span>
       <span>War Map<br/><span class="sub">Agency Advanta</span></span>
     </div>
     <nav id="sidebar-nav">
-      <button class="nav-item active" data-view="dashboard"><span class="dot"></span>2026 Dashboard</button>
-      <button class="nav-item" data-view="month"><span class="dot"></span>Month plan</button>
-      <button class="nav-item" data-view="habits"><span class="dot"></span>Habit Trackers</button>
-      <button class="nav-item" data-view="settings"><span class="dot"></span>Settings</button>
+      <button class="nav-item active" data-view="dashboard"><span class="dot"></span><span>2026 Dashboard</span></button>
+      <button class="nav-item" data-view="month"><span class="dot"></span><span>Month plan</span></button>
+      <button class="nav-item" data-view="habits"><span class="dot"></span><span>Habit Trackers</span></button>
+      <button class="nav-item" data-view="settings"><span class="dot"></span><span>Settings</span></button>
     </nav>
   </aside>
 
@@ -1160,6 +1323,7 @@
       <h1>2026 War Map</h1>
       <div class="page-sub">Click any quarter, month name, day, or task to open it as a Notion-style page. Drag tasks between days or quarters. Each task can have a bucket (Marketing / Sales / Client / Personal) and an optional goal with sub-tasks.</div>
       <div id="year-progress"></div>
+      <div id="dashboard-buckets"></div>
       <div id="quarters"></div>
     </div>
 
@@ -1172,6 +1336,8 @@
         <button class="ghost" id="today-btn">Today</button>
         <button class="primary" id="print-btn">Print / Save as PDF</button>
       </div>
+      <div id="month-mantra-host"></div>
+      <div id="month-buckets"></div>
       <div id="weeks"></div>
       <div class="month-footer" id="month-footer"></div>
     </div>
@@ -1333,6 +1499,8 @@ function defaultState() {
     goalTemplates: structuredClone(DEFAULT_GOAL_TEMPLATES),
     habits: [],             // [{ id, name, icon, color, frequency, daysOfWeek, target, unit, startDate, entries: {date:{value,done}} }]
     dayReports: {},         // { 'YYYY-MM-DD': { howItWent, wins, blockers, habitCheckins: {}, tomorrowPriorities: [a,b,c] } }
+    monthMantras: {},       // { 'YYYY-MM': 'string' }
+    sidebarCollapsed: false,
   };
 }
 
@@ -1400,6 +1568,8 @@ function migrateState(s) {
     entries: h.entries && typeof h.entries === 'object' ? h.entries : {},
   })) : [];
   out.dayReports = (s.dayReports && typeof s.dayReports === 'object') ? s.dayReports : {};
+  out.monthMantras = (s.monthMantras && typeof s.monthMantras === 'object') ? s.monthMantras : {};
+  out.sidebarCollapsed = !!s.sidebarCollapsed;
   return out;
 }
 
@@ -1590,15 +1760,24 @@ function moveTask(from, to) {
 // Reusable: render task cells with checkbox, bucket chip, + inline add
 // ─────────────────────────────────────────────────────────────────────
 function renderCells(container, opts) {
-  const { onChange, openTask, maxText, addLabel = '+ Add', source, key } = opts || {};
+  const { onChange, openTask, maxText, addLabel = '+ Add', source, key, colorByBucket = false } = opts || {};
   const wrap = document.createElement('div');
   wrap.className = 'cells';
   (container.tasks || []).forEach((t) => {
     const cell = document.createElement('div');
     const subP = subtaskProgress(t);
     const hasExtra = (t.notes && t.notes.trim()) || subP.total > 0;
-    cell.className = 'cell' + (t.done ? ' done' : '') + (hasExtra ? ' has-extra' : '');
+    cell.className = 'cell' + (t.done ? ' done' : '') + (hasExtra ? ' has-extra' : '') + (colorByBucket && t.bucket ? ' coloured' : '');
     cell.dataset.taskId = t.id;
+    // If colour-by-bucket, set CSS vars
+    if (colorByBucket && t.bucket) {
+      const b = getBucket(t.bucket);
+      if (b) {
+        cell.style.setProperty('--task-color', b.color);
+        cell.style.setProperty('--task-color-tint', b.color + '1F');       // ~12% alpha
+        cell.style.setProperty('--task-color-tint-strong', b.color + '38'); // ~22% alpha
+      }
+    }
     // Checkbox
     const check = document.createElement('span');
     check.className = 'check';
@@ -1609,13 +1788,13 @@ function renderCells(container, opts) {
       cell.classList.toggle('done', t.done);
     });
     cell.appendChild(check);
-    // Bucket chip
-    if (t.bucket) {
+    // Bucket chip — skip when colorByBucket is true (cell already coloured)
+    if (t.bucket && !colorByBucket) {
       const b = getBucket(t.bucket);
       if (b) {
         const chip = document.createElement('span');
         chip.className = 'bucket-chip';
-        chip.style.background = b.color + '33';   // 20% alpha
+        chip.style.background = b.color + '33';
         chip.style.color = b.color;
         chip.textContent = b.label;
         cell.appendChild(chip);
@@ -1625,7 +1804,7 @@ function renderCells(container, opts) {
     const text = document.createElement('span');
     text.className = 'text';
     text.textContent = maxText && t.text.length > maxText ? t.text.slice(0, maxText - 1) + '…' : (t.text || '(empty)');
-    text.title = 'Double-click to rename · single-click to open';
+    text.title = 'Double-click to rename · single-click to open · use ✎ / × on right';
     text.addEventListener('dblclick', ev => {
       ev.stopPropagation();
       ev.preventDefault();
@@ -1665,9 +1844,35 @@ function renderCells(container, opts) {
       badge.textContent = `${subP.done}/${subP.total}`;
       cell.appendChild(badge);
     }
+    // Edit + delete buttons (visible on hover)
+    const editBtn = document.createElement('button');
+    editBtn.className = 'row-act edit';
+    editBtn.textContent = '✎';
+    editBtn.title = 'Rename';
+    editBtn.addEventListener('click', ev => {
+      ev.stopPropagation();
+      // Trigger inline edit by dispatching dblclick on text
+      text.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }));
+    });
+    cell.appendChild(editBtn);
+    const delBtn = document.createElement('button');
+    delBtn.className = 'row-act del';
+    delBtn.textContent = '×';
+    delBtn.title = 'Delete';
+    delBtn.addEventListener('click', ev => {
+      ev.stopPropagation();
+      const display = (t.text || '').trim() || '(empty task)';
+      if (!confirm(`Delete "${display}"?`)) return;
+      const idx = container.tasks.indexOf(t);
+      if (idx >= 0) container.tasks.splice(idx, 1);
+      saveState();
+      onChange && onChange();
+    });
+    cell.appendChild(delBtn);
     cell.addEventListener('click', ev => {
       if (ev.target === check) return;
       if (ev.target.classList.contains('text-input')) return;
+      if (ev.target.closest('.row-act')) return;
       openTask && openTask(t);
     });
     if (source && key) makeCellDraggable(cell, source, key, t.id);
@@ -1712,6 +1917,104 @@ function renderCells(container, opts) {
 // ─────────────────────────────────────────────────────────────────────
 // Dashboard render
 // ─────────────────────────────────────────────────────────────────────
+function renderMonthMantra(y, m) {
+  const host = document.getElementById('month-mantra-host');
+  if (!host) return;
+  const key = isoMonth(y, m);
+  const val = state.monthMantras[key] || '';
+  host.innerHTML = '';
+  const card = document.createElement('div');
+  card.className = 'month-mantra';
+  const lbl = document.createElement('div');
+  lbl.className = 'mlabel';
+  lbl.textContent = `${MONTHS_FULL[m]} ${y} · slogan / mantra`;
+  card.appendChild(lbl);
+  const ta = document.createElement('textarea');
+  ta.placeholder = 'Write the slogan or mantra that drives this month…';
+  ta.value = val;
+  ta.rows = 1;
+  // Auto-grow
+  ta.addEventListener('input', () => {
+    state.monthMantras[key] = ta.value;
+    saveState();
+    ta.style.height = 'auto';
+    ta.style.height = ta.scrollHeight + 'px';
+  });
+  setTimeout(() => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }, 0);
+  card.appendChild(ta);
+  host.appendChild(card);
+}
+
+// Collect all task counts grouped by bucket id, given an array of containers (each {tasks})
+function bucketCountsFromContainers(containers) {
+  const counts = {};
+  state.buckets.forEach(b => counts[b.id] = { total: 0, done: 0 });
+  counts._none = { total: 0, done: 0 };
+  function walk(tasks) {
+    (tasks || []).forEach(t => {
+      const k = t.bucket || '_none';
+      if (!counts[k]) counts[k] = { total: 0, done: 0 };
+      counts[k].total++;
+      if (t.done) counts[k].done++;
+      if (t.tasks && t.tasks.length) walk(t.tasks);
+    });
+  }
+  containers.forEach(c => walk(c?.tasks || []));
+  return counts;
+}
+function renderBucketSummaryInto(hostId, counts) {
+  const host = document.getElementById(hostId);
+  if (!host) return;
+  host.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'bucket-summary';
+  // Build entries — buckets in their state order + uncategorised at the end (only if non-zero)
+  const entries = state.buckets.map(b => ({ id: b.id, label: b.label, icon: b.icon, color: b.color, ...counts[b.id] }));
+  if ((counts._none?.total || 0) > 0) entries.push({ id: '_none', label: 'Uncategorised', icon: '·', color: 'rgba(255,255,255,0.18)', total: counts._none.total, done: counts._none.done });
+  entries.forEach(e => {
+    const tile = document.createElement('div');
+    tile.className = 'bucket-tile';
+    tile.style.setProperty('--bucket-color', e.color);
+    tile.innerHTML = `
+      <span class="bt-icon">${e.icon || ''}</span>
+      <div class="bt-meta">
+        <div class="bt-name">${escapeHtml(e.label)}</div>
+        <div class="bt-count">${e.total}</div>
+        <div class="bt-sub">${e.done}/${e.total} done · ${e.total ? Math.round((e.done / e.total) * 100) : 0}%</div>
+      </div>
+    `;
+    wrap.appendChild(tile);
+  });
+  host.appendChild(wrap);
+}
+
+function renderDashboardBucketSummary() {
+  const containers = [];
+  Object.values(state.quarters).forEach(n => containers.push(n));
+  Object.values(state.days).forEach(n => containers.push(n));
+  Object.values(state.weeks).forEach(n => containers.push(n));
+  Object.values(state.monthProjects).forEach(n => containers.push(n));
+  Object.values(state.monthKPIs).forEach(n => containers.push(n));
+  const counts = bucketCountsFromContainers(containers);
+  renderBucketSummaryInto('dashboard-buckets', counts);
+}
+function renderMonthBucketSummary(y, m) {
+  const monthKey = isoMonth(y, m);
+  const containers = [];
+  const total = daysInMonth(y, m);
+  for (let d = 1; d <= total; d++) {
+    const id = isoDate(y, m, d);
+    if (state.days[id]) containers.push(state.days[id]);
+    // Include weekly goals for the week containing this day
+    const mon = mondayOfWeek(y, m, d);
+    if (state.weeks[mon] && !containers.includes(state.weeks[mon])) containers.push(state.weeks[mon]);
+  }
+  if (state.monthProjects[monthKey]) containers.push(state.monthProjects[monthKey]);
+  if (state.monthKPIs[monthKey]) containers.push(state.monthKPIs[monthKey]);
+  const counts = bucketCountsFromContainers(containers);
+  renderBucketSummaryInto('month-buckets', counts);
+}
+
 function renderYearProgress() {
   const host = document.getElementById('year-progress');
   if (!host) return;
@@ -1757,6 +2060,7 @@ function renderYearProgress() {
 
 function renderDashboard() {
   renderYearProgress();
+  renderDashboardBucketSummary();
   const host = document.getElementById('quarters');
   host.innerHTML = '';
   const quarters = [
@@ -1839,6 +2143,8 @@ function renderMonth() {
   const title = document.getElementById('month-title');
   title.textContent = `${MONTHS_FULL[m]} ${y}`;
   title.onclick = () => openMonth(y, m);
+  renderMonthMantra(y, m);
+  renderMonthBucketSummary(y, m);
   const total = daysInMonth(y, m);
   const startOffset = weekdayIso(y, m, 1);
   const totalCells = startOffset + total;
@@ -2735,6 +3041,7 @@ function openWeek(monday) {
           maxText: 80,
           addLabel: '+ Task',
           source: 'day', key: did,
+          colorByBucket: true,
         }));
         makeDropTarget(card, { source: 'day', key: did });
         grid.appendChild(card);
@@ -3004,6 +3311,153 @@ function habitCard(h) {
   return card;
 }
 
+function renderHabitCharts(parentEl, h) {
+  const section = document.createElement('div'); section.className = 'modal-section';
+  const head = document.createElement('h3'); head.textContent = 'Charts';
+  section.appendChild(head);
+  const wrap = document.createElement('div'); wrap.className = 'habit-charts';
+  // Build sorted entries
+  const entries = Object.entries(h.entries || {})
+    .map(([date, e]) => ({ date, value: (e?.value != null && e.value !== '') ? Number(e.value) : null, done: !!e?.done }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const isValueHabit = !!(h.target || (entries.some(e => e.value != null)));
+  // ─── Chart 1: values over time (line) — only if any numeric values ───
+  if (isValueHabit && entries.filter(e => e.value != null).length >= 2) {
+    const card = document.createElement('div'); card.className = 'chart-card';
+    card.innerHTML = `<h4>${escapeHtml(h.unit ? h.unit + ' over time' : 'values over time')}</h4>`;
+    const vals = entries.filter(e => e.value != null);
+    const W = 640, H = 200;
+    const PAD_L = 44, PAD_R = 12, PAD_T = 16, PAD_B = 28;
+    const plotW = W - PAD_L - PAD_R;
+    const plotH = H - PAD_T - PAD_B;
+    const minDate = new Date(vals[0].date).getTime();
+    const maxDate = new Date(vals[vals.length - 1].date).getTime();
+    const dateRange = Math.max(1, maxDate - minDate);
+    const ys = vals.map(v => v.value);
+    let yMin = Math.min(...ys);
+    let yMax = Math.max(...ys);
+    if (h.target) { yMin = Math.min(yMin, h.target); yMax = Math.max(yMax, h.target); }
+    const ySpan = (yMax - yMin) || 1;
+    // pad y-range 10%
+    yMin -= ySpan * 0.10; yMax += ySpan * 0.10;
+    const xMap = (d) => PAD_L + ((new Date(d).getTime() - minDate) / dateRange) * plotW;
+    const yMap = (v) => PAD_T + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
+    let svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">`;
+    // Grid lines (3 horizontal)
+    svg += `<g class="grid">`;
+    for (let i = 0; i <= 3; i++) {
+      const yPos = PAD_T + (i / 3) * plotH;
+      svg += `<line x1="${PAD_L}" y1="${yPos}" x2="${W - PAD_R}" y2="${yPos}" />`;
+    }
+    svg += `</g>`;
+    // Y-axis labels
+    svg += `<g class="axis">`;
+    for (let i = 0; i <= 3; i++) {
+      const v = yMax - (i / 3) * (yMax - yMin);
+      const yPos = PAD_T + (i / 3) * plotH;
+      svg += `<text x="${PAD_L - 6}" y="${yPos + 3}" text-anchor="end">${v.toFixed(1)}</text>`;
+    }
+    svg += `</g>`;
+    // X-axis labels (start + end)
+    svg += `<g class="axis">`;
+    svg += `<text x="${PAD_L}" y="${H - 8}" text-anchor="start">${vals[0].date.slice(5)}</text>`;
+    svg += `<text x="${W - PAD_R}" y="${H - 8}" text-anchor="end">${vals[vals.length - 1].date.slice(5)}</text>`;
+    svg += `</g>`;
+    // Target line
+    if (h.target) {
+      const yPos = yMap(h.target);
+      svg += `<line class="target-line" x1="${PAD_L}" y1="${yPos}" x2="${W - PAD_R}" y2="${yPos}" />`;
+      svg += `<text class="target-label" x="${W - PAD_R}" y="${yPos - 4}" text-anchor="end">target ${h.target}${h.unit || ''}</text>`;
+    }
+    // Area + line path
+    const pts = vals.map(v => `${xMap(v.date).toFixed(1)},${yMap(v.value).toFixed(1)}`);
+    if (pts.length) {
+      const areaPath = `M ${pts[0].split(',')[0]} ${PAD_T + plotH} L ${pts.join(' L ')} L ${pts[pts.length - 1].split(',')[0]} ${PAD_T + plotH} Z`;
+      svg += `<path class="area" d="${areaPath}" />`;
+      svg += `<path class="line" d="M ${pts.join(' L ')}" />`;
+    }
+    // Dots
+    vals.forEach(v => {
+      svg += `<circle class="dot" cx="${xMap(v.date).toFixed(1)}" cy="${yMap(v.value).toFixed(1)}" r="3"><title>${v.date} · ${v.value}${h.unit || ''}</title></circle>`;
+    });
+    svg += `</svg>`;
+    card.insertAdjacentHTML('beforeend', svg);
+    wrap.appendChild(card);
+  }
+  // ─── Chart 2: weekly consistency (bar) ───
+  // Buckets of last 12 ISO weeks — count days logged per week + how many days the habit applied that week.
+  const today = new Date(todayIso());
+  const todayMon = mondayOfWeek(today.getFullYear(), today.getMonth(), today.getDate());
+  // Build last 12 Mondays
+  const weeks = [];
+  for (let i = 11; i >= 0; i--) {
+    const monDt = new Date(todayMon);
+    monDt.setDate(monDt.getDate() - i * 7);
+    const mIso = isoDate(monDt.getFullYear(), monDt.getMonth(), monDt.getDate());
+    let applies = 0, done = 0;
+    for (let d = 0; d < 7; d++) {
+      const dt = new Date(monDt); dt.setDate(dt.getDate() + d);
+      const did = isoDate(dt.getFullYear(), dt.getMonth(), dt.getDate());
+      if (!habitApplies(h, did)) continue;
+      applies++;
+      const e = h.entries && h.entries[did];
+      if (e && (e.done || (e.value != null && e.value !== ''))) done++;
+    }
+    weeks.push({ monday: mIso, applies, done });
+  }
+  if (weeks.some(w => w.applies > 0)) {
+    const card = document.createElement('div'); card.className = 'chart-card';
+    card.innerHTML = `<h4>Weekly consistency (last 12 weeks)</h4>`;
+    const W = 640, H = 170;
+    const PAD_L = 30, PAD_R = 8, PAD_T = 16, PAD_B = 30;
+    const plotW = W - PAD_L - PAD_R;
+    const plotH = H - PAD_T - PAD_B;
+    const barW = (plotW / weeks.length) * 0.7;
+    const gap = (plotW / weeks.length) * 0.3;
+    const maxApplies = Math.max(...weeks.map(w => w.applies), 1);
+    let svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">`;
+    // Grid lines (3)
+    svg += `<g class="grid">`;
+    for (let i = 0; i <= 3; i++) {
+      const yPos = PAD_T + (i / 3) * plotH;
+      svg += `<line x1="${PAD_L}" y1="${yPos}" x2="${W - PAD_R}" y2="${yPos}" />`;
+    }
+    svg += `</g>`;
+    // Y-axis labels
+    svg += `<g class="axis">`;
+    for (let i = 0; i <= 3; i++) {
+      const v = maxApplies - (i / 3) * maxApplies;
+      const yPos = PAD_T + (i / 3) * plotH;
+      svg += `<text x="${PAD_L - 6}" y="${yPos + 3}" text-anchor="end">${Math.round(v)}</text>`;
+    }
+    svg += `</g>`;
+    weeks.forEach((w, i) => {
+      const x = PAD_L + i * (barW + gap) + gap / 2;
+      // Background bar (days applicable)
+      const hApp = (w.applies / maxApplies) * plotH;
+      svg += `<rect class="bar zero" x="${x.toFixed(1)}" y="${(PAD_T + plotH - hApp).toFixed(1)}" width="${barW.toFixed(1)}" height="${hApp.toFixed(1)}" rx="3"><title>${w.monday} · ${w.done}/${w.applies}</title></rect>`;
+      // Foreground (days done)
+      const hDone = w.applies ? (w.done / maxApplies) * plotH : 0;
+      svg += `<rect class="bar" x="${x.toFixed(1)}" y="${(PAD_T + plotH - hDone).toFixed(1)}" width="${barW.toFixed(1)}" height="${hDone.toFixed(1)}" rx="3"><title>${w.monday} · ${w.done}/${w.applies}</title></rect>`;
+      // X-axis: show month-day for the Monday
+      if (i % 2 === 0) {
+        svg += `<text class="week-label" x="${(x + barW / 2).toFixed(1)}" y="${H - 12}" text-anchor="middle">${w.monday.slice(5)}</text>`;
+      }
+    });
+    svg += `</svg>`;
+    card.insertAdjacentHTML('beforeend', svg);
+    wrap.appendChild(card);
+  }
+  if (!wrap.children.length) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'color:var(--text-tertiary);font-size:12.5px;padding:10px;font-style:italic';
+    empty.textContent = 'Log a few entries to see charts here.';
+    wrap.appendChild(empty);
+  }
+  section.appendChild(wrap);
+  parentEl.appendChild(section);
+}
+
 function openHabit(id) {
   const h = state.habits.find(x => x.id === id);
   if (!h) return;
@@ -3083,6 +3537,8 @@ function openHabit(id) {
       section.appendChild(form);
       body.appendChild(section);
 
+      // Charts (values over time + weekly consistency)
+      renderHabitCharts(body, h);
       // History
       const hSection = document.createElement('div'); hSection.className = 'modal-section';
       const hh = document.createElement('h3'); hh.textContent = 'History';
@@ -3206,11 +3662,11 @@ function renderSettings() {
 // ─────────────────────────────────────────────────────────────────────
 document.querySelectorAll('.sidebar .nav-item').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
 document.getElementById('add-habit-btn').addEventListener('click', () => {
-  const name = prompt('Habit name (e.g. "Weigh-in" or "Gym"):');
-  if (!name || !name.trim()) return;
+  // Create a new habit immediately with sensible defaults, then open its
+  // modal so the user fills in the details (no prompt).
   const h = {
     id: 'h-' + uid().slice(2),
-    name: name.trim(), icon: '🎯', color: '#5e9eff',
+    name: '', icon: '🎯', color: '#5e9eff',
     frequency: 'daily', daysOfWeek: [0,1,2,3,4,5,6],
     target: 0, unit: '',
     startDate: todayIso(),
@@ -3251,6 +3707,20 @@ document.getElementById('wipe-all').addEventListener('click', () => {
   state = { ...defaultState(), quarters: { Q1: {tasks:[],notes:''}, Q2: {tasks:[],notes:''}, Q3: {tasks:[],notes:''}, Q4: {tasks:[],notes:''} }, days: {}, weeks: {}, monthProjects: {}, monthKPIs: {}, monthNotes: {} };
   saveState(); setView('dashboard');
 });
+
+// Sidebar collapse toggle
+function applySidebarState() {
+  const shell = document.getElementById('app-shell');
+  const toggle = document.getElementById('sb-toggle');
+  shell.classList.toggle('sb-collapsed', !!state.sidebarCollapsed);
+  toggle.textContent = state.sidebarCollapsed ? '»' : '«';
+}
+document.getElementById('sb-toggle').addEventListener('click', () => {
+  state.sidebarCollapsed = !state.sidebarCollapsed;
+  saveState();
+  applySidebarState();
+});
+applySidebarState();
 
 // Boot
 setView(state.activeView || 'dashboard');
