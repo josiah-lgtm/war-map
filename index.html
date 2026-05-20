@@ -1936,8 +1936,9 @@ function renderCells(container, opts) {
         cell.appendChild(s);
       }
     }
-    // Sub-task count badge
-    if (subP.total) {
+    // Sub-task count badge — hidden in colour-by-bucket views (month plan,
+    // week view) for the same uniform look as the chips.
+    if (subP.total && !colorByBucket) {
       const badge = document.createElement('span');
       badge.className = 'meta';
       badge.textContent = `${subP.done}/${subP.total}`;
@@ -1989,7 +1990,13 @@ function renderCells(container, opts) {
     inp.placeholder = 'Type a task and press Enter…';
     addBtn.replaceWith(inp);
     inp.focus();
+    // Guard against double-commit — Enter triggers commit + re-render, but
+    // the input also fires `blur` afterwards which used to commit the same
+    // text a second time.
+    let committed = false;
     function commit() {
+      if (committed) return;
+      committed = true;
       const v = inp.value.trim();
       if (v) {
         container.tasks.push(tk(v));
@@ -2001,7 +2008,7 @@ function renderCells(container, opts) {
     }
     inp.addEventListener('keydown', e => {
       if (e.key === 'Enter') { e.preventDefault(); commit(); }
-      else if (e.key === 'Escape') inp.replaceWith(addBtn);
+      else if (e.key === 'Escape') { committed = true; inp.replaceWith(addBtn); }
     });
     inp.addEventListener('blur', () => { setTimeout(commit, 100); });
   });
