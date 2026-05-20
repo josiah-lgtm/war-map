@@ -32,33 +32,21 @@
   body { min-height: 100vh; }
   button { font-family: inherit; }
 
-  .app-shell {
-    display: grid;
-    grid-template-columns: 220px 1fr;
-    min-height: 100vh;
-  }
+  .app-shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
   @media (max-width: 800px) { .app-shell { grid-template-columns: 1fr; } }
 
   .sidebar {
     background: rgba(0,0,0,0.35);
     border-right: 1px solid var(--separator);
     padding: 22px 14px;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    overflow-y: auto;
+    position: sticky; top: 0;
+    height: 100vh; overflow-y: auto;
   }
   .sidebar .logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    color: var(--text);
-    text-transform: uppercase;
-    margin-bottom: 22px;
-    padding: 0 8px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; font-weight: 700; letter-spacing: 0.1em;
+    color: var(--text); text-transform: uppercase;
+    margin-bottom: 22px; padding: 0 8px;
   }
   .sidebar .logo .mark {
     width: 28px; height: 28px;
@@ -72,15 +60,11 @@
   .sidebar nav { display: flex; flex-direction: column; gap: 2px; }
   .sidebar .nav-item {
     display: flex; align-items: center; gap: 10px;
-    background: transparent;
-    border: none;
+    background: transparent; border: none;
     color: var(--text-secondary);
-    padding: 9px 12px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    text-align: left;
+    padding: 9px 12px; border-radius: 8px;
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; text-align: left;
     font-family: inherit;
   }
   .sidebar .nav-item:hover { color: var(--text); background: var(--surface-raised); }
@@ -91,41 +75,106 @@
   .topbar {
     position: sticky; top: 0; z-index: 30;
     background: rgba(10,10,13,0.85);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--separator);
     padding: 12px 28px;
-    display: flex;
-    align-items: center;
-    gap: 18px;
+    display: flex; align-items: center; gap: 18px;
   }
   .topbar .crumb {
     color: var(--text-tertiary);
-    font-size: 11.5px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-weight: 600;
+    font-size: 11.5px; text-transform: uppercase;
+    letter-spacing: 0.08em; font-weight: 600;
   }
   .topbar .crumb b { color: var(--text); font-weight: 700; }
   .topbar .spacer { flex: 1; }
-  .topbar .status {
-    color: var(--text-tertiary);
-    font-size: 11.5px;
-    display: inline-flex; align-items: center; gap: 6px;
-  }
-  .topbar .status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--good); display: inline-block; }
+  .topbar .status { color: var(--text-tertiary); font-size: 11.5px; display: inline-flex; align-items: center; gap: 6px; }
+  .topbar .status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--good); }
   .topbar .status .dot.saving { background: var(--warn); animation: pulse 0.8s infinite alternate; }
   @keyframes pulse { from { opacity: 0.4 } to { opacity: 1 } }
 
-  .container {
-    padding: 28px 32px 80px;
-    max-width: 1480px;
-    margin: 0 auto;
-  }
+  .container { padding: 28px 32px 80px; max-width: 1480px; margin: 0 auto; }
   .container.hidden { display: none; }
   h1 { font-size: 30px; margin: 0 0 4px; letter-spacing: -0.02em; font-weight: 700; }
   h2 { font-size: 20px; margin: 0 0 6px; letter-spacing: -0.01em; font-weight: 700; }
   .page-sub { color: var(--text-tertiary); font-size: 13px; margin-bottom: 24px; }
+
+  /* ─── Task cells (the building block reused everywhere) ─────────── */
+  .cells {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .cell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 5px;
+    font-size: 11.5px;
+    color: var(--text);
+    cursor: pointer;
+    line-height: 1.35;
+    transition: background 0.12s, border-color 0.12s;
+    text-align: left;
+    min-height: 24px;
+  }
+  .cell:hover { background: var(--accent-tint); border-color: rgba(212,160,23,0.30); }
+  .cell.done { color: var(--text-tertiary); }
+  .cell.done .text { text-decoration: line-through; }
+  .cell .check {
+    width: 12px; height: 12px;
+    border: 1.5px solid var(--text-tertiary);
+    border-radius: 3px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .cell.done .check {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .cell.done .check::after {
+    content: '✓';
+    color: #1a1a1a;
+    font-size: 9px;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .cell .text { flex: 1; word-break: break-word; }
+  .cell .meta {
+    color: var(--text-tertiary);
+    font-size: 9.5px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.04);
+    padding: 1px 5px;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+  .cell.has-notes::after {
+    content: '';
+    width: 4px; height: 4px; border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .add-cell {
+    background: transparent;
+    border: 1px dashed rgba(255,255,255,0.10);
+    color: var(--text-tertiary);
+    border-radius: 5px;
+    padding: 4px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    width: 100%;
+    transition: border-color 0.12s, color 0.12s;
+  }
+  .add-cell:hover { border-color: var(--accent); color: var(--accent-hover); }
 
   /* ─── Dashboard (year view) ─────────────────────────────────────── */
   .quarter-row {
@@ -140,40 +189,25 @@
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 14px 14px 10px;
+    padding: 14px;
     display: flex;
     flex-direction: column;
+    gap: 8px;
   }
+  .quarter-themes .qhead { display: flex; justify-content: space-between; align-items: baseline; }
   .quarter-themes .qlbl {
     font-size: 18px;
     font-weight: 800;
     letter-spacing: -0.01em;
     color: var(--accent-hover);
-    margin-bottom: 8px;
+    cursor: pointer;
   }
+  .quarter-themes .qlbl:hover { color: var(--accent); }
   .quarter-themes .qsub {
     color: var(--text-tertiary);
     font-size: 10.5px;
     text-transform: uppercase;
     letter-spacing: 0.07em;
-    margin-bottom: 8px;
-  }
-  .quarter-themes textarea {
-    flex: 1;
-    min-height: 160px;
-    background: rgba(0,0,0,0.20);
-    border: 1px solid var(--border-input);
-    border-radius: 8px;
-    color: var(--text);
-    font-size: 12.5px;
-    line-height: 1.5;
-    padding: 10px 12px;
-    font-family: inherit;
-    resize: vertical;
-  }
-  .quarter-themes textarea:focus {
-    outline: none; border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-tint);
   }
 
   .month-tile {
@@ -185,17 +219,13 @@
   }
   .month-tile:hover { border-color: var(--border-strong); }
   .month-tile .month-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
+    display: flex; justify-content: space-between; align-items: baseline;
     margin-bottom: 10px;
   }
   .month-tile .month-name {
-    font-size: 14px;
-    font-weight: 700;
+    font-size: 14px; font-weight: 700;
     color: var(--text);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    letter-spacing: 0.08em; text-transform: uppercase;
     cursor: pointer;
   }
   .month-tile .month-name:hover { color: var(--accent-hover); }
@@ -214,9 +244,7 @@
     background: rgba(255,255,255,0.025);
     border: 1px solid rgba(255,255,255,0.04);
     border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     font-size: 11px;
     color: var(--text-secondary);
     font-variant-numeric: tabular-nums;
@@ -228,26 +256,18 @@
   .day-cell.has-tasks { background: var(--accent-tint); color: var(--accent-hover); border-color: rgba(212,160,23,0.30); font-weight: 600; }
   .day-cell.has-tasks::after {
     content: "";
-    width: 4px; height: 4px;
-    border-radius: 50%;
-    background: var(--accent);
-    position: absolute;
-    bottom: 4px;
-    right: 4px;
+    width: 4px; height: 4px; border-radius: 50%; background: var(--accent);
+    position: absolute; bottom: 4px; right: 4px;
   }
   .day-cell.today {
     box-shadow: 0 0 0 2px var(--accent-hover) inset;
-    color: var(--text);
-    font-weight: 700;
+    color: var(--text); font-weight: 700;
   }
+  .day-cell.past { opacity: 0.35; text-decoration: line-through; }
+  .day-cell.past:hover { opacity: 1; text-decoration: none; }
 
   /* ─── Month plan ────────────────────────────────────────────────── */
-  .month-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 22px;
-  }
+  .month-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
   .month-toolbar .nav-arrow {
     width: 32px; height: 32px;
     background: var(--surface-raised);
@@ -258,7 +278,8 @@
     font-size: 14px;
   }
   .month-toolbar .nav-arrow:hover { border-color: var(--accent); color: var(--accent-hover); }
-  .month-toolbar h1 { margin: 0; min-width: 240px; }
+  .month-toolbar h1 { margin: 0; min-width: 240px; cursor: pointer; }
+  .month-toolbar h1:hover { color: var(--accent-hover); }
   .month-toolbar .spacer { flex: 1; }
   .month-toolbar button.ghost {
     background: var(--surface-raised);
@@ -276,8 +297,7 @@
     border-radius: 8px;
     color: #1a1a1a;
     padding: 8px 14px;
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 13px; font-weight: 600;
     cursor: pointer;
   }
   .month-toolbar button.primary:hover { background: var(--accent-hover); }
@@ -288,15 +308,11 @@
     gap: 8px;
     margin-bottom: 8px;
   }
-  .week-row.head {
-    margin-bottom: 6px;
-  }
+  .week-row.head { margin-bottom: 6px; }
   .week-row.head .day-head {
     color: var(--text-tertiary);
-    font-size: 10.5px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-weight: 700;
+    font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: 0.08em; font-weight: 700;
     padding: 4px 10px;
   }
   .day-card {
@@ -307,58 +323,43 @@
     padding: 8px 10px 6px;
     display: flex;
     flex-direction: column;
+    gap: 4px;
     transition: border-color 0.15s, background 0.15s;
+    cursor: pointer;
   }
-  .day-card:focus-within { border-color: var(--accent); background: rgba(212,160,23,0.04); }
-  .day-card.empty { background: rgba(255,255,255,0.015); }
+  .day-card:hover { border-color: var(--accent); }
+  .day-card.empty { background: rgba(255,255,255,0.015); cursor: default; min-height: 80px; }
   .day-card.today {
     border-color: var(--accent);
     box-shadow: 0 0 0 2px var(--accent-tint);
   }
+  .day-card.past { opacity: 0.55; }
+  .day-card.past .num { text-decoration: line-through; }
   .day-card .num {
-    font-size: 18px;
-    font-weight: 700;
+    font-size: 18px; font-weight: 700;
     color: var(--text);
-    margin-bottom: 4px;
+    margin-bottom: 2px;
     font-variant-numeric: tabular-nums;
+    display: flex; align-items: center; gap: 6px;
   }
   .day-card.today .num { color: var(--accent-hover); }
   .day-card .num small {
-    font-size: 10px;
-    color: var(--text-tertiary);
-    font-weight: 600;
-    margin-left: 6px;
-    text-transform: uppercase;
+    font-size: 9.5px; color: var(--text-tertiary);
+    font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.06em;
   }
-  .day-card textarea {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: var(--text);
-    font-size: 11.5px;
-    line-height: 1.45;
-    padding: 2px 0;
-    resize: none;
-    font-family: inherit;
-    outline: none;
-    min-height: 100px;
-  }
-  .day-card textarea::placeholder { color: var(--text-tertiary); opacity: 0.6; }
-
+  .day-card .cells { flex: 1; }
   .day-card.weekly-goals {
     background: rgba(212,160,23,0.04);
     border-color: rgba(212,160,23,0.20);
   }
   .day-card.weekly-goals .num {
-    font-size: 11px;
+    font-size: 10.5px;
     color: var(--accent-hover);
-    font-weight: 700;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
+    font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
   }
 
-  /* Monthly projects + KPIs */
+  /* Monthly footer */
   .month-footer {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -371,32 +372,27 @@
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
+  .footer-card .fh { display: flex; justify-content: space-between; align-items: baseline; }
   .footer-card h3 {
-    margin: 0 0 12px;
-    font-size: 12px;
-    color: var(--text-tertiary);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    margin: 0;
+    font-size: 12px; color: var(--text-tertiary);
+    text-transform: uppercase; letter-spacing: 0.08em;
     font-weight: 700;
+    cursor: pointer;
   }
-  .footer-card textarea {
-    width: 100%;
-    min-height: 120px;
-    background: rgba(0,0,0,0.20);
-    border: 1px solid var(--border-input);
-    border-radius: 8px;
-    color: var(--text);
-    font-size: 13px;
-    line-height: 1.6;
-    padding: 10px 12px;
-    font-family: inherit;
-    resize: vertical;
+  .footer-card h3:hover { color: var(--accent-hover); }
+  .footer-card .open-link {
+    background: transparent; border: none;
+    color: var(--text-tertiary);
+    font-size: 11px; cursor: pointer; font-family: inherit;
+    text-decoration: underline;
   }
-  .footer-card textarea:focus {
-    outline: none; border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-tint);
-  }
+  .footer-card .open-link:hover { color: var(--accent-hover); }
+  .footer-card .cell { font-size: 13px; }
 
   /* ─── Settings ──────────────────────────────────────────────────── */
   .settings-card {
@@ -416,29 +412,188 @@
     padding: 8px 14px;
     border-radius: 8px;
     font-size: 13px;
-    cursor: pointer;
-    font-family: inherit;
+    cursor: pointer; font-family: inherit;
   }
   .settings-card button:hover { border-color: var(--accent); color: var(--accent-hover); }
   .settings-card button.danger { color: var(--bad); border-color: rgba(255,69,58,0.30); }
   .settings-card button.danger:hover { background: rgba(255,69,58,0.10); }
 
-  /* Print rules */
+  /* ─── Modal (Notion-style page) ─────────────────────────────────── */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    z-index: 100;
+    align-items: flex-start; justify-content: center;
+    overflow-y: auto;
+    padding: 56px 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #16161a;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    max-width: 720px; width: 100%;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+    overflow: hidden;
+  }
+  .modal-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--separator);
+    background: rgba(255,255,255,0.015);
+  }
+  .modal-back {
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 5px;
+  }
+  .modal-back:hover { color: var(--text); background: var(--surface-raised); }
+  .modal-crumb {
+    color: var(--text-tertiary);
+    font-size: 11.5px; text-transform: uppercase;
+    letter-spacing: 0.07em; font-weight: 600;
+    flex: 1;
+    margin-left: 6px;
+  }
+  .modal-crumb b { color: var(--text); font-weight: 700; }
+  .modal-x {
+    background: transparent; border: none;
+    color: var(--text-tertiary);
+    font-size: 22px; cursor: pointer; line-height: 1;
+    padding: 2px 8px;
+  }
+  .modal-x:hover { color: var(--text); }
+  .modal-body { padding: 24px 28px 32px; }
+  .modal-body .title-input {
+    width: 100%;
+    background: transparent; border: none;
+    color: var(--text);
+    font-size: 28px; font-weight: 700; letter-spacing: -0.02em;
+    margin: 0 0 8px;
+    padding: 4px 0;
+    font-family: inherit;
+  }
+  .modal-body .title-input:focus { outline: none; }
+  .modal-body .title-static { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 8px; }
+  .modal-body .meta { color: var(--text-tertiary); font-size: 13px; margin-bottom: 20px; }
+  .modal-section { margin-top: 26px; }
+  .modal-section:first-of-type { margin-top: 0; }
+  .modal-section h3 {
+    font-size: 12px; color: var(--text-tertiary);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin: 0 0 10px; font-weight: 700;
+  }
+
+  .mt-list { display: flex; flex-direction: column; gap: 1px; }
+  .mt-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 8px;
+    border-radius: 6px;
+    transition: background 0.12s;
+  }
+  .mt-row:hover { background: rgba(255,255,255,0.03); }
+  .mt-row .check {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--text-tertiary);
+    border-radius: 4px;
+    flex-shrink: 0; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .mt-row.done .check { background: var(--accent); border-color: var(--accent); }
+  .mt-row.done .check::after { content: '✓'; color: #1a1a1a; font-size: 11px; font-weight: 800; }
+  .mt-row input.text-in {
+    flex: 1;
+    background: transparent; border: none;
+    color: var(--text);
+    font-size: 14.5px;
+    padding: 4px 0;
+    font-family: inherit;
+  }
+  .mt-row input.text-in:focus { outline: none; }
+  .mt-row.done input.text-in { text-decoration: line-through; color: var(--text-tertiary); }
+  .mt-row .has-notes-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+  .mt-row .open-btn, .mt-row .delete-btn {
+    background: transparent; border: none;
+    color: var(--text-tertiary);
+    cursor: pointer; padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.12s;
+    font-family: inherit;
+  }
+  .mt-row:hover .open-btn, .mt-row:hover .delete-btn { opacity: 1; }
+  .mt-row .open-btn:hover { background: var(--accent-tint); color: var(--accent-hover); }
+  .mt-row .delete-btn:hover { color: var(--bad); }
+
+  .mt-add {
+    background: transparent; border: none;
+    color: var(--text-tertiary);
+    padding: 8px 10px;
+    margin-top: 2px;
+    font-size: 13.5px;
+    cursor: pointer;
+    width: 100%; text-align: left;
+    border-radius: 6px;
+    font-family: inherit;
+  }
+  .mt-add:hover { background: rgba(255,255,255,0.03); color: var(--text); }
+
+  .notes-area {
+    width: 100%;
+    min-height: 140px;
+    background: rgba(0,0,0,0.20);
+    border: 1px solid var(--border-input);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 12px 14px;
+    font-family: inherit;
+    resize: vertical;
+  }
+  .notes-area:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint); }
+
+  /* In-modal day summaries (week modal shows the 7 days) */
+  .day-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  @media (max-width: 600px) { .day-summary-grid { grid-template-columns: 1fr; } }
+  .day-summary {
+    background: rgba(255,255,255,0.025);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: border-color 0.12s, background 0.12s;
+  }
+  .day-summary:hover { border-color: var(--accent); background: var(--accent-tint); }
+  .day-summary.today { border-color: var(--accent); }
+  .day-summary.past { opacity: 0.55; }
+  .day-summary .ds-day { font-size: 12px; color: var(--text-tertiary); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+  .day-summary .ds-count { font-size: 13px; color: var(--text); margin-top: 2px; }
+
+  /* Print styles */
   @media print {
-    .sidebar, .topbar, .month-toolbar { display: none !important; }
+    .sidebar, .topbar, .month-toolbar, .modal-overlay { display: none !important; }
     body { background: #fff; color: #111; }
     .day-card, .footer-card, .quarter-themes, .month-tile {
-      background: #fff !important;
-      border-color: #ddd !important;
-      color: #111 !important;
+      background: #fff !important; border-color: #ddd !important; color: #111 !important;
     }
-    .day-card textarea, .quarter-themes textarea, .footer-card textarea {
-      color: #111 !important;
-      background: transparent !important;
-    }
-    .day-card .num, .quarter-themes .qlbl, .month-tile .month-name {
-      color: #111 !important;
-    }
+    .cell { background: #fafaf7 !important; border-color: #ddd !important; color: #111 !important; }
+    .day-card .num, .quarter-themes .qlbl, .month-tile .month-name, .footer-card h3 { color: #111 !important; }
     .container { max-width: none; padding: 12px; }
   }
 </style>
@@ -448,10 +603,7 @@
   <aside class="sidebar">
     <div class="logo">
       <span class="mark">AA</span>
-      <span>
-        War Map<br/>
-        <span class="sub">Agency Advanta</span>
-      </span>
+      <span>War Map<br/><span class="sub">Agency Advanta</span></span>
     </div>
     <nav id="sidebar-nav">
       <button class="nav-item active" data-view="dashboard"><span class="dot"></span>2026 Dashboard</button>
@@ -470,7 +622,7 @@
     <!-- Dashboard view -->
     <div class="container" data-view-pane="dashboard">
       <h1>2026 War Map</h1>
-      <div class="page-sub">Quarterly themes on the left · click any day to jump to that month's plan.</div>
+      <div class="page-sub">Click any quarter title, month name, day, or task to open it as a Notion-style page with sub-tasks and notes.</div>
       <div id="quarters"></div>
     </div>
 
@@ -485,16 +637,7 @@
         <button class="primary" id="print-btn">Print / Save as PDF</button>
       </div>
       <div id="weeks"></div>
-      <div class="month-footer">
-        <div class="footer-card">
-          <h3>Main projects</h3>
-          <textarea id="main-projects" placeholder="e.g. Activate AI System + Launch Accountability System + Deadline"></textarea>
-        </div>
-        <div class="footer-card">
-          <h3>KPIs</h3>
-          <textarea id="main-kpis" placeholder="e.g. Source 60/100 Linkedin Accounts"></textarea>
-        </div>
-      </div>
+      <div class="month-footer" id="month-footer"></div>
     </div>
 
     <!-- Settings view -->
@@ -510,24 +653,39 @@
           <button id="reset-seed">Reset to seed (2026 + May)</button>
           <button class="danger" id="wipe-all">Wipe everything</button>
         </div>
-        <div class="help">State is autosaved to your browser's localStorage (key: <code>warMap_v1</code>). Use Export JSON to back it up.</div>
-      </div>
-      <div class="settings-card">
-        <h3>About</h3>
-        <div class="help">Built for Josiah · Agency Advanta · mirrors the Josiah War Map 2026 spreadsheet structure (year dashboard + monthly Mon–Sun planner with weekly goals and monthly projects/KPIs).</div>
+        <div class="help">State autosaves to <code>warMap_v1</code> in localStorage. Export JSON to back up.</div>
       </div>
     </div>
   </main>
 </div>
 
+<!-- Notion-style modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <button class="modal-back" id="modal-back" style="display:none">‹ Back</button>
+      <div class="modal-crumb" id="modal-crumb"></div>
+      <button class="modal-x" id="modal-x">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
 <script>
 // ─────────────────────────────────────────────────────────────────────
 // Seed data — parsed from the user's CSVs (Dashboard + MAY)
+// Each list is an array of task objects: { id, text, done, notes, tasks }
 // ─────────────────────────────────────────────────────────────────────
+function uid() { return 't-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7); }
+function tk(text, extra = {}) { return { id: uid(), text, done: false, notes: '', tasks: [], ...extra }; }
+function node(taskTexts = [], notes = '') {
+  return { tasks: taskTexts.map(t => tk(t)), notes };
+}
+
 const SEED = {
   year: 2026,
   quarters: {
-    Q1: [
+    Q1: node([
       'QSHOWS 8/Day | LI +40 | SMS & Email 10k/day | Quality Fix Linkedin VA System',
       'Program: Email & 2 Calls/Week',
       'Delegate Admin, PA, Lead Nurturing, & CSM Ramp',
@@ -535,66 +693,63 @@ const SEED = {
       'Sales Management System = 20% SCR & Marketing Removal',
       'Hiring Sales Reps & SDR Pool & Setter Manager | 2 Hours/day 4hr work week Removal CSM Calls',
       'Hiring System Fixed Skin',
-    ].join('\n'),
-    Q2: [
+    ]),
+    Q2: node([
       'Revenue 50k Prof: Sales v2 Update + Sale RepOps: IP Box + Notion Centralisation',
       'Personal: 80KG',
       'CSM: 75% Clients On 3Bookings/Week',
       'OPS: Fix Finance + Comms + Tracking',
-    ].join('\n'),
-    Q3: ['Limassol Move'].join('\n'),
-    Q4: '',
+    ]),
+    Q3: node(['Limassol Move']),
+    Q4: node([]),
   },
-  // Per-day notes — keys are 'YYYY-MM-DD'
   days: {
-    '2026-05-01': 'BDAY OOO\nPlan May + 24th',
-    '2026-05-02': 'BDAY OOO\nPlan May + 24th',
-    '2026-05-03': 'BDAY OOO\nPlan May + 24th',
-    '2026-05-04': 'Payday team',
-    '2026-05-05': 'Payday team\nReview revenue and calls.\nCSM + AI Hub + Diana',
-    '2026-05-06': 'May + 24th Plan',
-    '2026-05-07': 'Funnel For Linkedin Accounts\nCar + Laundry\nReview John +',
-    '2026-05-08': 'Automate Tracking Sales Team + L10\nZahi\nCar + Laundry',
-    '2026-05-09': 'L10',
-    '2026-05-10': 'Mushroom',
-    '2026-05-11': 'Client Results\nCSM + Sales Review\nL10',
-    '2026-05-12': 'Client Results\nSales Tracking + Contract\nFinances',
-    '2026-05-13': 'Client Results\nSales Tracking\nFinances\nDrop Car',
-    '2026-05-14': 'Sales Tracking\nFinances',
-    '2026-05-15': 'Sales Tracker\nCSM + Sales Review',
-    '2026-05-16': 'L10 — Wardrobe Review',
-    '2026-05-17': 'Mushroom\nScorecard + Team Meeting',
-    '2026-05-18': 'Write AI Plans / Feedback + finance plan\nSOP on tracker + LI sourcing\nResults',
-    '2026-05-19': 'Results + Rev',
-    '2026-05-20': 'Results\nRevenue + LI + Payments',
-    '2026-05-21': 'Results\nRevenue',
-    '2026-05-22': 'Results + Rev',
-    '2026-05-23': 'L10 + Plan May',
+    '2026-05-01': node(['BDAY OOO', 'Plan May + 24th']),
+    '2026-05-02': node(['BDAY OOO', 'Plan May + 24th']),
+    '2026-05-03': node(['BDAY OOO', 'Plan May + 24th']),
+    '2026-05-04': node(['Payday team']),
+    '2026-05-05': node(['Payday team', 'Review revenue and calls.', 'CSM + AI Hub + Diana']),
+    '2026-05-06': node(['May + 24th Plan']),
+    '2026-05-07': node(['Funnel For Linkedin Accounts', 'Car + Laundry', 'Review John +']),
+    '2026-05-08': node(['Automate Tracking Sales Team + L10', 'Zahi', 'Car + Laundry']),
+    '2026-05-09': node(['L10']),
+    '2026-05-10': node(['Mushroom']),
+    '2026-05-11': node(['Client Results', 'CSM + Sales Review', 'L10']),
+    '2026-05-12': node(['Client Results', 'Sales Tracking + Contract', 'Finances']),
+    '2026-05-13': node(['Client Results', 'Sales Tracking', 'Finances', 'Drop Car']),
+    '2026-05-14': node(['Sales Tracking', 'Finances']),
+    '2026-05-15': node(['Sales Tracker', 'CSM + Sales Review']),
+    '2026-05-16': node(['L10 — Wardrobe Review']),
+    '2026-05-17': node(['Mushroom', 'Scorecard + Team Meeting']),
+    '2026-05-18': node(['Write AI Plans / Feedback + finance plan', 'SOP on tracker + LI sourcing', 'Results']),
+    '2026-05-19': node(['Results + Rev']),
+    '2026-05-20': node(['Results', 'Revenue + LI + Payments']),
+    '2026-05-21': node(['Results', 'Revenue']),
+    '2026-05-22': node(['Results + Rev']),
+    '2026-05-23': node(['L10 + Plan May']),
   },
-  // Per-week goals — keys are the Monday ISO date 'YYYY-MM-DD'
-  weeklyGoals: {
-    '2026-04-27': '',                                                       // partial week (May 1–3)
-    '2026-05-04': 'May Plan + AI 3-4 Projects/week\nScale LI System +',
-    '2026-05-11': 'Results + Finances\nNew Sales Tracker',
-    '2026-05-18': 'AI Project + double LinkedIn team\nLaunch LI/Email?',
-    '2026-05-25': '',
+  weeks: {
+    '2026-04-27': node([]),
+    '2026-05-04': node(['May Plan + AI 3-4 Projects/week', 'Scale LI System +']),
+    '2026-05-11': node(['Results + Finances', 'New Sales Tracker']),
+    '2026-05-18': node(['AI Project + double LinkedIn team', 'Launch LI/Email?']),
+    '2026-05-25': node([]),
   },
-  // Monthly projects + KPIs — keys are 'YYYY-MM'
-  monthlyProjects: {
-    '2026-05': [
+  monthProjects: {
+    '2026-05': node([
       'Activate AI System + Launch Accountability System + Deadline',
       'New LI System + New Hires',
       'Put Daily Roleplay/Meetings + New Tracking AI System',
       '3x Padel/Gym + New Tracking AI System',
-    ].join('\n'),
+    ]),
   },
-  monthlyKPIs: {
-    '2026-05': [
+  monthKPIs: {
+    '2026-05': node([
       'Complete AI CSM Projects For MAY',
       'Source 60/100 LinkedIn Accounts',
       'Get Zahi: Show 60%, 2nd call booked rate: 70% + John 40% SCR',
       '80KG',
-    ].join('\n'),
+    ]),
   },
 };
 
@@ -607,12 +762,40 @@ function defaultState() {
   return {
     year: SEED.year,
     activeView: 'dashboard',
-    activeMonth: 4,        // 0-indexed; 4 = May
-    quarters: { ...SEED.quarters },
-    days: { ...SEED.days },
-    weeklyGoals: { ...SEED.weeklyGoals },
-    monthlyProjects: { ...SEED.monthlyProjects },
-    monthlyKPIs: { ...SEED.monthlyKPIs },
+    activeMonth: 4,                                // 0-indexed, May
+    quarters: structuredClone(SEED.quarters),
+    days: structuredClone(SEED.days),
+    weeks: structuredClone(SEED.weeks),
+    monthProjects: structuredClone(SEED.monthProjects),
+    monthKPIs: structuredClone(SEED.monthKPIs),
+    monthNotes: {},                                // month-level free-form notes
+  };
+}
+
+// Migration: convert old string-or-array values to node shape {tasks, notes}
+function toNode(v) {
+  if (v && typeof v === 'object' && Array.isArray(v.tasks)) {
+    // ensure tasks have ids + nested shape
+    v.tasks = v.tasks.map(rebuildTask);
+    if (typeof v.notes !== 'string') v.notes = '';
+    return v;
+  }
+  if (typeof v === 'string') {
+    return { tasks: v.split('\n').map(l => l.trim()).filter(Boolean).map(t => tk(t)), notes: '' };
+  }
+  if (Array.isArray(v)) {
+    return { tasks: v.map(rebuildTask), notes: '' };
+  }
+  return { tasks: [], notes: '' };
+}
+function rebuildTask(t) {
+  if (typeof t === 'string') return tk(t);
+  return {
+    id: t.id || uid(),
+    text: t.text || '',
+    done: !!t.done,
+    notes: typeof t.notes === 'string' ? t.notes : '',
+    tasks: Array.isArray(t.tasks) ? t.tasks.map(rebuildTask) : [],
   };
 }
 
@@ -622,16 +805,26 @@ function loadState() {
     if (!raw) return defaultState();
     const s = JSON.parse(raw);
     const d = defaultState();
-    return {
-      ...d,
-      ...s,
-      quarters: { ...d.quarters, ...(s.quarters || {}) },
-      days: { ...d.days, ...(s.days || {}) },
-      weeklyGoals: { ...d.weeklyGoals, ...(s.weeklyGoals || {}) },
-      monthlyProjects: { ...d.monthlyProjects, ...(s.monthlyProjects || {}) },
-      monthlyKPIs: { ...d.monthlyKPIs, ...(s.monthlyKPIs || {}) },
-    };
-  } catch (e) { console.error('loadState failed', e); return defaultState(); }
+    const out = { ...d, ...s };
+    out.quarters = { Q1: toNode(out.quarters?.Q1), Q2: toNode(out.quarters?.Q2), Q3: toNode(out.quarters?.Q3), Q4: toNode(out.quarters?.Q4) };
+    out.days = {};
+    Object.entries(s.days || {}).forEach(([k, v]) => out.days[k] = toNode(v));
+    Object.entries(d.days).forEach(([k, v]) => { if (!out.days[k]) out.days[k] = v; });
+    out.weeks = {};
+    Object.entries(s.weeks || s.weeklyGoals || {}).forEach(([k, v]) => out.weeks[k] = toNode(v));
+    Object.entries(d.weeks).forEach(([k, v]) => { if (!out.weeks[k]) out.weeks[k] = v; });
+    out.monthProjects = {};
+    Object.entries(s.monthProjects || s.monthlyProjects || {}).forEach(([k, v]) => out.monthProjects[k] = toNode(v));
+    Object.entries(d.monthProjects).forEach(([k, v]) => { if (!out.monthProjects[k]) out.monthProjects[k] = v; });
+    out.monthKPIs = {};
+    Object.entries(s.monthKPIs || s.monthlyKPIs || {}).forEach(([k, v]) => out.monthKPIs[k] = toNode(v));
+    Object.entries(d.monthKPIs).forEach(([k, v]) => { if (!out.monthKPIs[k]) out.monthKPIs[k] = v; });
+    out.monthNotes = s.monthNotes || {};
+    return out;
+  } catch (e) {
+    console.error('loadState failed', e);
+    return defaultState();
+  }
 }
 
 let state = loadState();
@@ -648,10 +841,7 @@ function saveState() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       setSaveStatus('Saved', false);
-    } catch (e) {
-      setSaveStatus('Save error', false);
-      console.error(e);
-    }
+    } catch (e) { setSaveStatus('Save error', false); console.error(e); }
   }, 220);
 }
 
@@ -660,16 +850,15 @@ function saveState() {
 // ─────────────────────────────────────────────────────────────────────
 const MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const MONTHS_SHORT = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-const WEEKDAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const WEEKDAYS_FULL = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const WEEKDAYS_SHORT = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
 function pad2(n) { return String(n).padStart(2, '0'); }
 function isoDate(y, m, d) { return `${y}-${pad2(m+1)}-${pad2(d)}`; }
 function isoMonth(y, m) { return `${y}-${pad2(m+1)}`; }
 function daysInMonth(y, m) { return new Date(y, m+1, 0).getDate(); }
-// ISO weekday: Mon=0, Sun=6
 function weekdayIso(y, m, d) {
-  const w = new Date(y, m, d).getDay();   // Sun=0
+  const w = new Date(y, m, d).getDay();
   return w === 0 ? 6 : w - 1;
 }
 function mondayOfWeek(y, m, d) {
@@ -682,6 +871,53 @@ function mondayOfWeek(y, m, d) {
 function todayIso() {
   const d = new Date();
   return isoDate(d.getFullYear(), d.getMonth(), d.getDate());
+}
+function isPastDay(idStr) { return idStr < todayIso(); }
+function weekdayFullForIso(id) {
+  const [y, m, d] = id.split('-').map(Number);
+  const w = new Date(y, m - 1, d).getDay();
+  return WEEKDAYS_FULL[(w === 0 ? 6 : w - 1)];
+}
+function fmtLongDate(id) {
+  const [y, m, d] = id.split('-').map(Number);
+  return `${weekdayFullForIso(id)}, ${MONTHS_FULL[m-1]} ${d}, ${y}`;
+}
+function fmtWeekRange(monday) {
+  const a = new Date(monday);
+  const b = new Date(monday); b.setDate(b.getDate() + 6);
+  const f = (d) => `${MONTHS_FULL[d.getMonth()].slice(0,3)} ${d.getDate()}`;
+  if (a.getMonth() === b.getMonth()) {
+    return `${f(a)}–${b.getDate()}, ${b.getFullYear()}`;
+  }
+  return `${f(a)} – ${f(b)}, ${b.getFullYear()}`;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Node lookup — returns a Node ({tasks, notes}) from state by source+key
+// ─────────────────────────────────────────────────────────────────────
+function getNode(source, key) {
+  let store;
+  switch (source) {
+    case 'quarter': store = state.quarters; break;
+    case 'day': store = state.days; break;
+    case 'week': store = state.weeks; break;
+    case 'monthProjects': store = state.monthProjects; break;
+    case 'monthKPIs': store = state.monthKPIs; break;
+    default: throw new Error('unknown source ' + source);
+  }
+  if (!store[key]) store[key] = { tasks: [], notes: '' };
+  return store[key];
+}
+
+// Walk into nested subtasks: find the task object given a path like ['root-id','child-id']
+function getTaskByPath(rootNode, path) {
+  let cur = { tasks: rootNode.tasks };
+  for (const id of path) {
+    const next = (cur.tasks || []).find(t => t.id === id);
+    if (!next) return null;
+    cur = next;
+  }
+  return cur;
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -704,10 +940,71 @@ function updateCrumb() {
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// Reusable: a list of task cells + an "add" button
+// container = { tasks: [...] }
+// onChange called whenever data is mutated.
+// kind: 'compact' (small cells in dashboard/day grid) or 'inline' (footer cards)
+// ─────────────────────────────────────────────────────────────────────
+function renderCells(container, opts) {
+  const { onChange, openTask, maxText, kind = 'compact', addLabel = '+ Add' } = opts || {};
+  const wrap = document.createElement('div');
+  wrap.className = 'cells';
+  (container.tasks || []).forEach((t, idx) => {
+    const cell = document.createElement('div');
+    cell.className = 'cell' + (t.done ? ' done' : '') + ((t.notes && t.notes.trim()) || (t.tasks && t.tasks.length) ? ' has-notes' : '');
+    cell.dataset.taskId = t.id;
+    // Checkbox
+    const check = document.createElement('span');
+    check.className = 'check';
+    check.title = 'Toggle done';
+    check.addEventListener('click', ev => {
+      ev.stopPropagation();
+      t.done = !t.done;
+      saveState();
+      cell.classList.toggle('done', t.done);
+    });
+    cell.appendChild(check);
+    // Text
+    const text = document.createElement('span');
+    text.className = 'text';
+    text.textContent = maxText && t.text.length > maxText ? t.text.slice(0, maxText - 1) + '…' : t.text;
+    cell.appendChild(text);
+    // Sub-task count badge if any
+    if (t.tasks && t.tasks.length) {
+      const badge = document.createElement('span');
+      badge.className = 'meta';
+      const done = t.tasks.filter(x => x.done).length;
+      badge.textContent = `${done}/${t.tasks.length}`;
+      cell.appendChild(badge);
+    }
+    cell.addEventListener('click', ev => {
+      if (ev.target === check) return;
+      openTask && openTask(t);
+    });
+    wrap.appendChild(cell);
+  });
+  // Add button
+  const add = document.createElement('button');
+  add.className = 'add-cell';
+  add.textContent = addLabel;
+  add.addEventListener('click', ev => {
+    ev.stopPropagation();
+    const text = prompt('New task:');
+    if (text == null || !text.trim()) return;
+    container.tasks.push(tk(text.trim()));
+    saveState();
+    onChange && onChange();
+  });
+  wrap.appendChild(add);
+  return wrap;
+}
+
+// ─────────────────────────────────────────────────────────────────────
 // Dashboard render
 // ─────────────────────────────────────────────────────────────────────
 function renderDashboard() {
   const host = document.getElementById('quarters');
+  host.innerHTML = '';
   const quarters = [
     { q: 'Q1', months: [0, 1, 2] },
     { q: 'Q2', months: [3, 4, 5] },
@@ -715,56 +1012,65 @@ function renderDashboard() {
     { q: 'Q4', months: [9, 10, 11] },
   ];
   const today = todayIso();
-  host.innerHTML = quarters.map(({ q, months }) => {
-    const theme = (state.quarters[q] || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    return `<div class="quarter-row">
-      <div class="quarter-themes">
-        <div class="qlbl">${q}</div>
-        <div class="qsub">${months.map(m => MONTHS_SHORT[m]).join(' · ')}</div>
-        <textarea data-q-theme="${q}" placeholder="Add quarterly goals & themes…">${theme}</textarea>
-      </div>
-      ${months.map(m => {
-        const totalDays = daysInMonth(state.year, m);
-        const filledDays = Array.from({ length: totalDays }, (_, i) => isoDate(state.year, m, i + 1))
-          .filter(id => (state.days[id] || '').trim()).length;
-        return `<div class="month-tile">
-          <div class="month-head">
-            <div class="month-name" data-jump-month="${m}">${MONTHS_SHORT[m]}</div>
-            <div class="month-count">${filledDays}/${totalDays} filled</div>
-          </div>
-          <div class="day-grid">
-            ${Array.from({ length: totalDays }, (_, i) => {
-              const day = i + 1;
-              const id = isoDate(state.year, m, day);
-              const hasTasks = !!(state.days[id] || '').trim();
-              const isToday = id === today;
-              return `<div class="day-cell ${hasTasks ? 'has-tasks' : ''} ${isToday ? 'today' : ''}" data-jump-day="${id}" title="${id}${hasTasks ? ' — has tasks' : ''}">${day}</div>`;
-            }).join('')}
-          </div>
-        </div>`;
-      }).join('')}
-    </div>`;
-  }).join('');
-  // Wire quarter theme inputs
-  host.querySelectorAll('[data-q-theme]').forEach(ta => {
-    ta.addEventListener('input', e => {
-      state.quarters[e.target.dataset.qTheme] = e.target.value;
-      saveState();
+  quarters.forEach(({ q, months }) => {
+    const row = document.createElement('div');
+    row.className = 'quarter-row';
+    // Quarter themes
+    const qBox = document.createElement('div');
+    qBox.className = 'quarter-themes';
+    const head = document.createElement('div');
+    head.className = 'qhead';
+    const lbl = document.createElement('div');
+    lbl.className = 'qlbl'; lbl.textContent = q;
+    lbl.title = 'Open quarter';
+    lbl.addEventListener('click', () => openQuarter(q));
+    const sub = document.createElement('div');
+    sub.className = 'qsub'; sub.textContent = months.map(m => MONTHS_SHORT[m]).join(' · ');
+    head.appendChild(lbl); head.appendChild(sub);
+    qBox.appendChild(head);
+    qBox.appendChild(renderCells(getNode('quarter', q), {
+      onChange: renderDashboard,
+      openTask: (t) => openTaskFromContainer({ source: 'quarter', key: q }, t.id),
+      addLabel: '+ Add theme',
+    }));
+    row.appendChild(qBox);
+    // Month tiles
+    months.forEach(m => {
+      const tile = document.createElement('div');
+      tile.className = 'month-tile';
+      const monthHead = document.createElement('div');
+      monthHead.className = 'month-head';
+      const name = document.createElement('div');
+      name.className = 'month-name'; name.textContent = MONTHS_SHORT[m];
+      name.addEventListener('click', () => openMonth(state.year, m));
+      const totalDays = daysInMonth(state.year, m);
+      const filled = Array.from({ length: totalDays }, (_, i) => isoDate(state.year, m, i + 1))
+        .filter(id => (state.days[id]?.tasks?.length || 0) > 0).length;
+      const count = document.createElement('div');
+      count.className = 'month-count'; count.textContent = `${filled}/${totalDays} filled`;
+      monthHead.appendChild(name); monthHead.appendChild(count);
+      tile.appendChild(monthHead);
+      const grid = document.createElement('div');
+      grid.className = 'day-grid';
+      for (let i = 0; i < totalDays; i++) {
+        const day = i + 1;
+        const id = isoDate(state.year, m, day);
+        const has = (state.days[id]?.tasks?.length || 0) > 0;
+        const cell = document.createElement('div');
+        let cls = 'day-cell';
+        if (has) cls += ' has-tasks';
+        if (id === today) cls += ' today';
+        if (id < today) cls += ' past';
+        cell.className = cls;
+        cell.textContent = day;
+        cell.title = `${id}${has ? ' — has tasks' : ''}`;
+        cell.addEventListener('click', () => openDay(id));
+        grid.appendChild(cell);
+      }
+      tile.appendChild(grid);
+      row.appendChild(tile);
     });
-  });
-  // Wire jumps
-  host.querySelectorAll('[data-jump-month]').forEach(el => {
-    el.addEventListener('click', () => {
-      state.activeMonth = Number(el.dataset.jumpMonth);
-      setView('month');
-    });
-  });
-  host.querySelectorAll('[data-jump-day]').forEach(el => {
-    el.addEventListener('click', () => {
-      const [y, m] = el.dataset.jumpDay.split('-').map(Number);
-      state.activeMonth = m - 1;
-      setView('month');
-    });
+    host.appendChild(row);
   });
 }
 
@@ -774,76 +1080,424 @@ function renderDashboard() {
 function renderMonth() {
   const y = state.year;
   const m = state.activeMonth;
-  document.getElementById('month-title').textContent = `${MONTHS_FULL[m]} ${y}`;
-  // Compute the week rows. Each row covers a Mon–Sun span.
-  // First Monday on/before day 1; last Sunday on/after last day.
+  const title = document.getElementById('month-title');
+  title.textContent = `${MONTHS_FULL[m]} ${y}`;
+  title.onclick = () => openMonth(y, m);
   const total = daysInMonth(y, m);
-  const firstWeekdayIso = weekdayIso(y, m, 1);  // 0=Mon
-  // Calendar grid starts at Monday before day 1 (in same or prev month).
-  // We'll only render the days *inside* the current month (others stay blank cells).
-  const startOffset = firstWeekdayIso;  // number of blank cells before day 1
-  // Number of week rows
+  const startOffset = weekdayIso(y, m, 1);
   const totalCells = startOffset + total;
   const weeksCount = Math.ceil(totalCells / 7);
-
   const today = todayIso();
   const host = document.getElementById('weeks');
-  host.innerHTML = `<div class="week-row head">
-    ${WEEKDAYS_SHORT.map(d => `<div class="day-head">${d}</div>`).join('')}
-    <div class="day-head" style="text-align:right">Weekly Goals</div>
-  </div>` +
-  Array.from({ length: weeksCount }, (_, wIdx) => {
-    // Days in this week-row (positions 0..6)
-    const cells = Array.from({ length: 7 }, (_, dIdx) => {
+  host.innerHTML = '';
+  // Heading row
+  const headRow = document.createElement('div');
+  headRow.className = 'week-row head';
+  WEEKDAYS_SHORT.forEach(w => {
+    const c = document.createElement('div'); c.className = 'day-head'; c.textContent = w;
+    headRow.appendChild(c);
+  });
+  const wgHead = document.createElement('div'); wgHead.className = 'day-head'; wgHead.textContent = 'Weekly Goals'; wgHead.style.textAlign = 'right';
+  headRow.appendChild(wgHead);
+  host.appendChild(headRow);
+
+  for (let wIdx = 0; wIdx < weeksCount; wIdx++) {
+    const row = document.createElement('div');
+    row.className = 'week-row';
+    let anchorDay = wIdx * 7 - startOffset + 1;
+    for (let dIdx = 0; dIdx < 7; dIdx++) {
       const cellIndex = wIdx * 7 + dIdx;
       const dayNum = cellIndex - startOffset + 1;
       if (dayNum < 1 || dayNum > total) {
-        return `<div class="day-card empty"></div>`;
+        const empty = document.createElement('div');
+        empty.className = 'day-card empty';
+        row.appendChild(empty);
+        continue;
       }
       const id = isoDate(y, m, dayNum);
-      const val = (state.days[id] || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       const isToday = id === today;
-      return `<div class="day-card ${isToday ? 'today' : ''}" data-day-id="${id}">
-        <div class="num">${dayNum}${isToday ? ' <small>today</small>' : ''}</div>
-        <textarea data-day-input="${id}" placeholder="…">${val}</textarea>
-      </div>`;
-    }).join('');
-    // Anchor Monday for this week (or any present day → backtrack)
-    let anchorDay = wIdx * 7 - startOffset + 1;
+      const isPast = id < today && !isToday;
+      const card = document.createElement('div');
+      card.className = 'day-card' + (isToday ? ' today' : '') + (isPast ? ' past' : '');
+      card.dataset.dayId = id;
+      const num = document.createElement('div');
+      num.className = 'num';
+      const nspan = document.createElement('span'); nspan.textContent = dayNum;
+      num.appendChild(nspan);
+      if (isToday) { const small = document.createElement('small'); small.textContent = 'today'; num.appendChild(small); }
+      card.appendChild(num);
+      // Cells (tasks) for this day
+      const node = getNode('day', id);
+      const cellsEl = renderCells(node, {
+        onChange: renderMonth,
+        openTask: (t) => openTaskFromContainer({ source: 'day', key: id }, t.id),
+        maxText: 40,
+        addLabel: '+ Task',
+      });
+      card.appendChild(cellsEl);
+      // Click on background → open day
+      card.addEventListener('click', ev => {
+        if (ev.target.closest('.cell') || ev.target.closest('.add-cell') || ev.target.closest('.check')) return;
+        openDay(id);
+      });
+      row.appendChild(card);
+    }
+    // Weekly goals column
     if (anchorDay < 1) anchorDay = 1;
     const monday = mondayOfWeek(y, m, anchorDay);
-    const wg = (state.weeklyGoals[monday] || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    const wgHtml = `<div class="day-card weekly-goals" data-week-monday="${monday}">
-      <div class="num">Week of ${monday.slice(5)}</div>
-      <textarea data-week-input="${monday}" placeholder="Weekly goals…">${wg}</textarea>
-    </div>`;
-    return `<div class="week-row">${cells}${wgHtml}</div>`;
-  }).join('');
+    const wg = document.createElement('div');
+    wg.className = 'day-card weekly-goals';
+    wg.dataset.weekId = monday;
+    const wgNum = document.createElement('div');
+    wgNum.className = 'num';
+    wgNum.textContent = `Week of ${monday.slice(5)}`;
+    wg.appendChild(wgNum);
+    const wgNode = getNode('week', monday);
+    wg.appendChild(renderCells(wgNode, {
+      onChange: renderMonth,
+      openTask: (t) => openTaskFromContainer({ source: 'week', key: monday }, t.id),
+      maxText: 60,
+      addLabel: '+ Goal',
+    }));
+    wg.addEventListener('click', ev => {
+      if (ev.target.closest('.cell') || ev.target.closest('.add-cell') || ev.target.closest('.check')) return;
+      openWeek(monday);
+    });
+    row.appendChild(wg);
+    host.appendChild(row);
+  }
 
-  // Wire day textareas
-  host.querySelectorAll('[data-day-input]').forEach(ta => {
-    ta.addEventListener('input', e => {
-      const id = e.target.dataset.dayInput;
-      const v = e.target.value;
-      if (v) state.days[id] = v; else delete state.days[id];
-      saveState();
-    });
-  });
-  // Wire weekly-goal textareas
-  host.querySelectorAll('[data-week-input]').forEach(ta => {
-    ta.addEventListener('input', e => {
-      const id = e.target.dataset.weekInput;
-      const v = e.target.value;
-      if (v) state.weeklyGoals[id] = v; else delete state.weeklyGoals[id];
-      saveState();
-    });
-  });
-  // Render monthly footer
-  const monthKey = isoMonth(y, m);
-  document.getElementById('main-projects').value = state.monthlyProjects[monthKey] || '';
-  document.getElementById('main-kpis').value = state.monthlyKPIs[monthKey] || '';
+  // Footer (Main projects + KPIs)
+  renderMonthFooter(y, m);
   updateCrumb();
 }
+
+function renderMonthFooter(y, m) {
+  const host = document.getElementById('month-footer');
+  host.innerHTML = '';
+  const monthKey = isoMonth(y, m);
+  const blocks = [
+    { title: 'Main projects', source: 'monthProjects', key: monthKey, addLabel: '+ Project' },
+    { title: 'KPIs', source: 'monthKPIs', key: monthKey, addLabel: '+ KPI' },
+  ];
+  blocks.forEach(b => {
+    const card = document.createElement('div');
+    card.className = 'footer-card';
+    const fh = document.createElement('div'); fh.className = 'fh';
+    const h3 = document.createElement('h3'); h3.textContent = b.title;
+    h3.addEventListener('click', () => openMonth(y, m));
+    const ol = document.createElement('button');
+    ol.className = 'open-link'; ol.textContent = 'Open month →';
+    ol.addEventListener('click', () => openMonth(y, m));
+    fh.appendChild(h3); fh.appendChild(ol);
+    card.appendChild(fh);
+    const node = getNode(b.source, b.key);
+    card.appendChild(renderCells(node, {
+      onChange: () => renderMonthFooter(y, m),
+      openTask: (t) => openTaskFromContainer({ source: b.source, key: b.key }, t.id),
+      addLabel: b.addLabel,
+    }));
+    host.appendChild(card);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Modal system
+// ─────────────────────────────────────────────────────────────────────
+const modalStack = [];   // array of frame objects
+
+function openModal(frame) {
+  modalStack.push(frame);
+  renderModal();
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() {
+  modalStack.length = 0;
+  document.getElementById('modal-overlay').classList.remove('open');
+  // Re-render in case data changed
+  if (state.activeView === 'dashboard') renderDashboard();
+  if (state.activeView === 'month') renderMonth();
+}
+function popModal() {
+  modalStack.pop();
+  if (!modalStack.length) closeModal();
+  else renderModal();
+}
+
+document.getElementById('modal-x').addEventListener('click', closeModal);
+document.getElementById('modal-back').addEventListener('click', popModal);
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target.id === 'modal-overlay') closeModal();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && modalStack.length) closeModal();
+});
+
+function renderModal() {
+  const frame = modalStack[modalStack.length - 1];
+  if (!frame) return;
+  document.getElementById('modal-back').style.display = modalStack.length > 1 ? '' : 'none';
+  document.getElementById('modal-crumb').innerHTML = frame.crumb || '';
+  const body = document.getElementById('modal-body');
+  body.innerHTML = '';
+  frame.render(body);
+}
+
+// Helpers to render a Notion-style task list section inside a modal.
+function renderModalTaskSection(parentEl, container, opts) {
+  const { title, addLabel, openTaskById } = opts || {};
+  const section = document.createElement('div');
+  section.className = 'modal-section';
+  if (title) {
+    const h = document.createElement('h3'); h.textContent = title;
+    section.appendChild(h);
+  }
+  const list = document.createElement('div');
+  list.className = 'mt-list';
+  function paintRow(t) {
+    const row = document.createElement('div');
+    row.className = 'mt-row' + (t.done ? ' done' : '');
+    row.dataset.taskId = t.id;
+    const check = document.createElement('span');
+    check.className = 'check'; check.title = 'Toggle done';
+    check.addEventListener('click', () => {
+      t.done = !t.done;
+      row.classList.toggle('done', t.done);
+      saveState();
+    });
+    row.appendChild(check);
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.className = 'text-in'; inp.value = t.text; inp.placeholder = 'New task…';
+    inp.addEventListener('input', e => { t.text = e.target.value; saveState(); });
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const newT = tk('');
+        const idx = container.tasks.indexOf(t);
+        container.tasks.splice(idx + 1, 0, newT);
+        saveState();
+        const newRow = paintRow(newT);
+        row.after(newRow);
+        newRow.querySelector('input.text-in').focus();
+      } else if (e.key === 'Backspace' && !inp.value) {
+        e.preventDefault();
+        const idx = container.tasks.indexOf(t);
+        container.tasks.splice(idx, 1);
+        saveState();
+        const prev = row.previousElementSibling;
+        row.remove();
+        if (prev && prev.querySelector('input.text-in')) prev.querySelector('input.text-in').focus();
+      }
+    });
+    row.appendChild(inp);
+    if ((t.notes && t.notes.trim()) || (t.tasks && t.tasks.length)) {
+      const dot = document.createElement('span');
+      dot.className = 'has-notes-dot';
+      dot.title = 'Has notes / sub-tasks';
+      row.appendChild(dot);
+    }
+    const open = document.createElement('button');
+    open.className = 'open-btn'; open.textContent = 'Open ›';
+    open.addEventListener('click', () => openTaskById(t.id));
+    row.appendChild(open);
+    const del = document.createElement('button');
+    del.className = 'delete-btn'; del.textContent = '×'; del.title = 'Delete';
+    del.addEventListener('click', () => {
+      if (!confirm(`Delete "${t.text || '(empty)'}"?`)) return;
+      const idx = container.tasks.indexOf(t);
+      container.tasks.splice(idx, 1);
+      saveState();
+      row.remove();
+    });
+    row.appendChild(del);
+    return row;
+  }
+  container.tasks.forEach(t => list.appendChild(paintRow(t)));
+  section.appendChild(list);
+  const addBtn = document.createElement('button');
+  addBtn.className = 'mt-add';
+  addBtn.textContent = `${addLabel || '+ Add'}`;
+  addBtn.addEventListener('click', () => {
+    const newT = tk('');
+    container.tasks.push(newT);
+    saveState();
+    const row = paintRow(newT);
+    list.appendChild(row);
+    row.querySelector('input.text-in').focus();
+  });
+  section.appendChild(addBtn);
+  parentEl.appendChild(section);
+}
+
+function renderModalNotesSection(parentEl, container, opts) {
+  const { title = 'Notes', placeholder = 'Free-form notes…' } = opts || {};
+  const section = document.createElement('div');
+  section.className = 'modal-section';
+  const h = document.createElement('h3'); h.textContent = title;
+  section.appendChild(h);
+  const ta = document.createElement('textarea');
+  ta.className = 'notes-area';
+  ta.placeholder = placeholder;
+  ta.value = container.notes || '';
+  ta.addEventListener('input', e => { container.notes = e.target.value; saveState(); });
+  section.appendChild(ta);
+  parentEl.appendChild(section);
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Specific openers — Quarter, Day, Week, Month, Task
+// ─────────────────────────────────────────────────────────────────────
+function openQuarter(q) {
+  openModal({
+    crumb: `<b>${q}</b> · ${state.year}`,
+    render: (body) => {
+      const n = getNode('quarter', q);
+      const h = document.createElement('h1'); h.className = 'title-static'; h.textContent = `${q} ${state.year}`;
+      body.appendChild(h);
+      const meta = document.createElement('div'); meta.className = 'meta';
+      meta.textContent = `${q === 'Q1' ? 'Jan – Mar' : q === 'Q2' ? 'Apr – Jun' : q === 'Q3' ? 'Jul – Sep' : 'Oct – Dec'} ${state.year}`;
+      body.appendChild(meta);
+      renderModalTaskSection(body, n, { title: 'Themes', addLabel: '+ Add theme', openTaskById: (id) => openTaskFromContainer({ source: 'quarter', key: q }, id) });
+      renderModalNotesSection(body, n, { title: 'Notes', placeholder: 'Big-picture notes for the quarter…' });
+    },
+  });
+}
+
+function openDay(id) {
+  openModal({
+    crumb: `Day · <b>${id}</b>`,
+    render: (body) => {
+      const n = getNode('day', id);
+      const h = document.createElement('h1'); h.className = 'title-static'; h.textContent = fmtLongDate(id);
+      body.appendChild(h);
+      const t = todayIso();
+      const meta = document.createElement('div'); meta.className = 'meta';
+      meta.textContent = id === t ? 'Today' : id < t ? `Past · ${diffDays(id, t)} day(s) ago` : `Upcoming · in ${diffDays(t, id)} day(s)`;
+      body.appendChild(meta);
+      renderModalTaskSection(body, n, { title: 'Tasks', addLabel: '+ Add task', openTaskById: (tid) => openTaskFromContainer({ source: 'day', key: id }, tid) });
+      renderModalNotesSection(body, n, { title: 'Notes', placeholder: 'What happened, blockers, reflections…' });
+    },
+  });
+}
+
+function openWeek(monday) {
+  openModal({
+    crumb: `Week · <b>${monday}</b>`,
+    render: (body) => {
+      const n = getNode('week', monday);
+      const h = document.createElement('h1'); h.className = 'title-static'; h.textContent = `Week of ${fmtWeekRange(monday)}`;
+      body.appendChild(h);
+      const meta = document.createElement('div'); meta.className = 'meta';
+      meta.textContent = 'Goals, sub-tasks, and notes for this week.';
+      body.appendChild(meta);
+      renderModalTaskSection(body, n, { title: 'Weekly goals', addLabel: '+ Add goal', openTaskById: (tid) => openTaskFromContainer({ source: 'week', key: monday }, tid) });
+      // Days in this week (clickable)
+      const daySection = document.createElement('div'); daySection.className = 'modal-section';
+      const dh = document.createElement('h3'); dh.textContent = 'Days this week';
+      daySection.appendChild(dh);
+      const dg = document.createElement('div'); dg.className = 'day-summary-grid';
+      for (let i = 0; i < 7; i++) {
+        const dt = new Date(monday);
+        dt.setDate(dt.getDate() + i);
+        const did = isoDate(dt.getFullYear(), dt.getMonth(), dt.getDate());
+        const dayTasks = (state.days[did]?.tasks || []).length;
+        const isToday = did === todayIso();
+        const isPast = did < todayIso() && !isToday;
+        const card = document.createElement('div');
+        card.className = 'day-summary' + (isToday ? ' today' : '') + (isPast ? ' past' : '');
+        const lbl = document.createElement('div'); lbl.className = 'ds-day'; lbl.textContent = `${WEEKDAYS_SHORT[i]} ${did.slice(8)}`;
+        const cnt = document.createElement('div'); cnt.className = 'ds-count'; cnt.textContent = dayTasks ? `${dayTasks} task${dayTasks === 1 ? '' : 's'}` : 'no tasks';
+        card.appendChild(lbl); card.appendChild(cnt);
+        card.addEventListener('click', () => openDay(did));
+        dg.appendChild(card);
+      }
+      daySection.appendChild(dg);
+      body.appendChild(daySection);
+      renderModalNotesSection(body, n, { title: 'Notes', placeholder: 'How did the week go?' });
+    },
+  });
+}
+
+function openMonth(y, m) {
+  const monthKey = isoMonth(y, m);
+  openModal({
+    crumb: `Month · <b>${monthKey}</b>`,
+    render: (body) => {
+      const projects = getNode('monthProjects', monthKey);
+      const kpis = getNode('monthKPIs', monthKey);
+      const h = document.createElement('h1'); h.className = 'title-static'; h.textContent = `${MONTHS_FULL[m]} ${y}`;
+      body.appendChild(h);
+      const meta = document.createElement('div'); meta.className = 'meta';
+      const totalDays = daysInMonth(y, m);
+      const filled = Array.from({ length: totalDays }, (_, i) => isoDate(y, m, i + 1)).filter(id => (state.days[id]?.tasks?.length || 0) > 0).length;
+      meta.textContent = `${filled}/${totalDays} days have tasks · ${projects.tasks.length} projects · ${kpis.tasks.length} KPIs`;
+      body.appendChild(meta);
+      renderModalTaskSection(body, projects, { title: 'Main projects', addLabel: '+ Add project', openTaskById: (tid) => openTaskFromContainer({ source: 'monthProjects', key: monthKey }, tid) });
+      renderModalTaskSection(body, kpis, { title: 'KPIs', addLabel: '+ Add KPI', openTaskById: (tid) => openTaskFromContainer({ source: 'monthKPIs', key: monthKey }, tid) });
+      // Month-level notes (lives in state.monthNotes)
+      if (!state.monthNotes[monthKey]) state.monthNotes[monthKey] = '';
+      const notesContainer = { notes: state.monthNotes[monthKey] };
+      const section = document.createElement('div'); section.className = 'modal-section';
+      const nh = document.createElement('h3'); nh.textContent = 'Notes';
+      section.appendChild(nh);
+      const ta = document.createElement('textarea');
+      ta.className = 'notes-area';
+      ta.placeholder = 'Month wrap-up: what we shipped, what we delayed, what mattered…';
+      ta.value = state.monthNotes[monthKey] || '';
+      ta.addEventListener('input', e => { state.monthNotes[monthKey] = e.target.value; saveState(); });
+      section.appendChild(ta);
+      body.appendChild(section);
+    },
+  });
+}
+
+// Open a task. The task lives inside some container path:
+//   { source, key } + a sequence of task ids (we maintain the path on the frame).
+function openTaskFromContainer(rootRef, taskId, parentPath = []) {
+  const path = [...parentPath, taskId];
+  const root = getNode(rootRef.source, rootRef.key);
+  const task = getTaskByPath(root, path);
+  if (!task) return;
+  const lineage = [rootRef.source === 'quarter' ? rootRef.key
+                : rootRef.source === 'day' ? rootRef.key
+                : rootRef.source === 'week' ? `Week of ${rootRef.key}`
+                : rootRef.source === 'monthProjects' ? `${rootRef.key} · projects`
+                : rootRef.source === 'monthKPIs' ? `${rootRef.key} · KPIs`
+                : ''].concat(path.map((id, i) => {
+    const t = getTaskByPath(root, path.slice(0, i + 1));
+    return t ? (t.text || '(untitled)').slice(0, 40) : '?';
+  }));
+  openModal({
+    crumb: lineage.map((s, i) => i === lineage.length - 1 ? `<b>${escapeHtml(s)}</b>` : escapeHtml(s)).join(' / '),
+    render: (body) => {
+      const titleInput = document.createElement('input');
+      titleInput.className = 'title-input';
+      titleInput.value = task.text;
+      titleInput.placeholder = 'Untitled task';
+      titleInput.addEventListener('input', e => { task.text = e.target.value; saveState(); });
+      body.appendChild(titleInput);
+      const meta = document.createElement('div'); meta.className = 'meta';
+      const doneToggle = document.createElement('label');
+      doneToggle.style.cursor = 'pointer';
+      doneToggle.innerHTML = `<input type="checkbox" ${task.done ? 'checked' : ''} style="vertical-align:middle;margin-right:6px"/> Mark as done`;
+      doneToggle.querySelector('input').addEventListener('change', e => { task.done = e.target.checked; saveState(); });
+      meta.appendChild(doneToggle);
+      body.appendChild(meta);
+      renderModalTaskSection(body, task, {
+        title: 'Sub-tasks',
+        addLabel: '+ Add sub-task',
+        openTaskById: (sid) => openTaskFromContainer(rootRef, sid, path),
+      });
+      renderModalNotesSection(body, task, { title: 'Notes', placeholder: 'Sub-tasks, context, links…' });
+    },
+  });
+}
+
+function diffDays(a, b) {
+  const da = new Date(a), db = new Date(b);
+  return Math.round((db - da) / (1000 * 60 * 60 * 24));
+}
+function escapeHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
 // ─────────────────────────────────────────────────────────────────────
 // Wiring
@@ -872,27 +1526,12 @@ document.getElementById('today-btn').addEventListener('click', () => {
 });
 document.getElementById('print-btn').addEventListener('click', () => window.print());
 
-document.getElementById('main-projects').addEventListener('input', e => {
-  const k = isoMonth(state.year, state.activeMonth);
-  if (e.target.value) state.monthlyProjects[k] = e.target.value;
-  else delete state.monthlyProjects[k];
-  saveState();
-});
-document.getElementById('main-kpis').addEventListener('input', e => {
-  const k = isoMonth(state.year, state.activeMonth);
-  if (e.target.value) state.monthlyKPIs[k] = e.target.value;
-  else delete state.monthlyKPIs[k];
-  saveState();
-});
-
-// ─── Settings ────────────────────────────────────────────────────────
+// Settings
 document.getElementById('export-json').addEventListener('click', () => {
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = `war-map-${state.year}.json`;
-  a.click();
+  a.href = url; a.download = `war-map-${state.year}.json`; a.click();
   URL.revokeObjectURL(url);
 });
 document.getElementById('import-json').addEventListener('click', () => document.getElementById('import-file').click());
@@ -904,12 +1543,25 @@ document.getElementById('import-file').addEventListener('change', e => {
     try {
       const parsed = JSON.parse(ev.target.result);
       state = { ...defaultState(), ...parsed };
+      // Re-run migration
+      state = loadStateFromObj(state);
       saveState();
       setView(state.activeView || 'dashboard');
     } catch (err) { alert('Could not parse JSON: ' + err.message); }
   };
   reader.readAsText(f);
 });
+function loadStateFromObj(s) {
+  const d = defaultState();
+  const out = { ...d, ...s };
+  out.quarters = { Q1: toNode(out.quarters?.Q1), Q2: toNode(out.quarters?.Q2), Q3: toNode(out.quarters?.Q3), Q4: toNode(out.quarters?.Q4) };
+  ['days','weeks','monthProjects','monthKPIs'].forEach(k => {
+    out[k] = {};
+    Object.entries(s[k] || {}).forEach(([kk, v]) => out[k][kk] = toNode(v));
+  });
+  out.monthNotes = s.monthNotes || {};
+  return out;
+}
 document.getElementById('reset-seed').addEventListener('click', () => {
   if (!confirm('Reset everything to the seed (2026 themes + May tasks)? Your current edits will be lost.')) return;
   state = defaultState();
@@ -918,13 +1570,18 @@ document.getElementById('reset-seed').addEventListener('click', () => {
 });
 document.getElementById('wipe-all').addEventListener('click', () => {
   if (!confirm('Wipe ALL data and start blank (no seed)?')) return;
-  state = { year: new Date().getFullYear(), activeView: 'dashboard', activeMonth: new Date().getMonth(),
-            quarters: { Q1: '', Q2: '', Q3: '', Q4: '' }, days: {}, weeklyGoals: {}, monthlyProjects: {}, monthlyKPIs: {} };
+  state = {
+    year: new Date().getFullYear(),
+    activeView: 'dashboard',
+    activeMonth: new Date().getMonth(),
+    quarters: { Q1: { tasks: [], notes: '' }, Q2: { tasks: [], notes: '' }, Q3: { tasks: [], notes: '' }, Q4: { tasks: [], notes: '' } },
+    days: {}, weeks: {}, monthProjects: {}, monthKPIs: {}, monthNotes: {},
+  };
   saveState();
   setView('dashboard');
 });
 
-// ─── Boot ────────────────────────────────────────────────────────────
+// Boot
 setView(state.activeView || 'dashboard');
 </script>
 </body>
