@@ -1166,14 +1166,16 @@
   .cell .row-act.edit:hover { background: var(--accent-tint); color: var(--accent-hover); }
   .cell .row-act.del:hover { background: rgba(255,69,58,0.16); color: var(--bad); }
 
-  /* Coloured task variant (used in week-day inline cards) */
+  /* Coloured task variant — outline only (used in war-map quarter themes
+     and week-day inline cards). No bucket-label chip; the border colour IS
+     the bucket identifier. */
   .cell.coloured {
-    background: var(--task-color-tint, rgba(255,255,255,0.03));
-    border-color: var(--task-color, rgba(255,255,255,0.06));
+    background: rgba(255,255,255,0.025);
+    border: 1.5px solid var(--task-color, rgba(255,255,255,0.10));
   }
   .cell.coloured:hover {
-    background: var(--task-color-tint-strong, var(--accent-tint));
-    border-color: var(--task-color, rgba(212,160,23,0.30));
+    background: var(--task-color-tint, var(--accent-tint));
+    border-color: var(--task-color, rgba(212,160,23,0.50));
   }
 
   /* ─── Monthly mantra ────────────────────────────────────────────── */
@@ -2090,6 +2092,7 @@ function renderDashboard() {
       openTask: (t) => openTaskFromContainer({ source: 'quarter', key: q }, t.id),
       addLabel: '+ Add theme',
       source: 'quarter', key: q,
+      colorByBucket: true,
     }));
     // The quarter card itself is also a drop target (for moving any task in)
     makeDropTarget(qBox, { source: 'quarter', key: q });
