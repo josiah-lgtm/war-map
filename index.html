@@ -1369,6 +1369,62 @@
   }
   [data-view-pane="dashboard"] .day-cell.has-tasks::after { width: 3px; height: 3px; bottom: 2px; right: 2px; }
 
+  /* ─── Undo / redo floating bar (bottom-right) ───────────────────── */
+  .undo-bar {
+    position: fixed;
+    bottom: 18px;
+    right: 18px;
+    display: none;
+    align-items: center;
+    gap: 6px;
+    background: #16161a;
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    padding: 8px 10px 8px 14px;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.5);
+    z-index: 80;
+    font-size: 12px;
+    color: var(--text-secondary);
+    max-width: 380px;
+  }
+  .undo-bar.show { display: inline-flex; }
+  .undo-bar .label {
+    font-weight: 500;
+    color: var(--text);
+    margin-right: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .undo-bar button {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 5px 11px;
+    border-radius: 7px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .undo-bar button:hover:not(:disabled) {
+    background: var(--accent-tint);
+    border-color: var(--accent);
+    color: var(--accent-hover);
+  }
+  .undo-bar button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .undo-bar .kbd {
+    font-size: 9.5px;
+    opacity: 0.55;
+    margin-left: 3px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
   /* Print styles */
   @media print {
     .sidebar, .topbar, .month-toolbar, .modal-overlay { display: none !important; }
@@ -1460,6 +1516,13 @@
       </div>
     </div>
   </main>
+</div>
+
+<!-- Undo / redo floating bar -->
+<div class="undo-bar" id="undo-bar">
+  <span class="label" id="undo-label">—</span>
+  <button id="undo-btn" title="Undo (⌘Z)">↶ Undo<span class="kbd">⌘Z</span></button>
+  <button id="redo-btn" title="Redo (⌘⇧Z)">↷ Redo</button>
 </div>
 
 <!-- Notion-style modal -->
@@ -1958,15 +2021,10 @@ function renderCells(container, opts) {
     const delBtn = document.createElement('button');
     delBtn.className = 'row-act del';
     delBtn.textContent = '×';
-    delBtn.title = 'Delete';
+    delBtn.title = 'Delete (undoable)';
     delBtn.addEventListener('click', ev => {
       ev.stopPropagation();
-      const display = (t.text || '').trim() || '(empty task)';
-      if (!confirm(`Delete "${display}"?`)) return;
-      const idx = container.tasks.indexOf(t);
-      if (idx >= 0) container.tasks.splice(idx, 1);
-      saveState();
-      onChange && onChange();
+      if (deleteTaskFromContainer(container, t)) onChange && onChange();
     });
     cell.appendChild(delBtn);
     cell.addEventListener('click', ev => {
@@ -2483,13 +2541,9 @@ function renderModalTaskSection(parentEl, container, opts) {
     open.addEventListener('click', () => openTaskById(t.id));
     row.appendChild(open);
     const del = document.createElement('button');
-    del.className = 'delete-btn'; del.textContent = '×'; del.title = 'Delete';
+    del.className = 'delete-btn'; del.textContent = '×'; del.title = 'Delete (undoable)';
     del.addEventListener('click', () => {
-      if (!confirm(`Delete "${t.text || '(empty)'}"?`)) return;
-      const idx = container.tasks.indexOf(t);
-      container.tasks.splice(idx, 1);
-      saveState();
-      row.remove();
+      if (deleteTaskFromContainer(container, t)) row.remove();
     });
     row.appendChild(del);
     return row;
@@ -2598,9 +2652,14 @@ function renderGoalSection(parentEl, task) {
   const clr = document.createElement('button');
   clr.className = 'gh-clear'; clr.textContent = '× Remove';
   clr.addEventListener('click', () => {
-    if (!confirm('Remove the goal? Sub-tasks will stay.')) return;
+    const removed = task.goal;
     task.goal = null;
     saveState();
+    recordChange(
+      `Removed goal: ${(removed?.label || 'goal').slice(0, 30)}`,
+      () => { task.goal = removed; },
+      () => { task.goal = null; }
+    );
     renderModal();
   });
   gh.appendChild(clr);
@@ -2697,10 +2756,15 @@ function renderGoalSection(parentEl, task) {
       const del = document.createElement('button'); del.className = 'del'; del.textContent = '×';
       del.title = 'Delete entry';
       del.addEventListener('click', () => {
-        if (!confirm(`Delete entry: ${entry.date} = ${fmtGoalNumber(entry.value, task.goal.unit)}?`)) return;
         const idx = task.goal.entries.findIndex(e => e.date === entry.date && e.value === entry.value);
-        if (idx >= 0) task.goal.entries.splice(idx, 1);
+        if (idx < 0) return;
+        const removed = task.goal.entries.splice(idx, 1)[0];
         saveState();
+        recordChange(
+          `Removed entry ${removed.date} = ${fmtGoalNumber(removed.value, task.goal?.unit)}`,
+          () => task.goal && task.goal.entries.splice(idx, 0, removed),
+          () => task.goal && task.goal.entries.splice(idx, 1)
+        );
         renderModal();
       });
       row.appendChild(d); row.appendChild(v); row.appendChild(del);
@@ -2760,16 +2824,24 @@ function renderScheduleSection(parentEl, task, rootRef, parentPath) {
     const newDate = dInp.value || null;
     task.scheduledFor = newDate;
     saveState();
-    // If we're in a day container and date doesn't match, offer to move.
-    if (newDate && rootRef.source === 'day' && newDate !== rootRef.key) {
-      if (confirm(`Move this task to ${newDate}?`)) {
-        // Move the task to the target day (uses existing moveTask path semantics).
-        // We only move if this is a root-level task (no parent path).
-        if (!parentPath || !parentPath.length) {
-          moveTask({ source: 'day', key: rootRef.key, taskId: task.id }, { source: 'day', key: newDate });
-          closeModal();
-          return;
-        }
+    // If we're in a day container and date doesn't match, auto-move the
+    // task (with undo so the user can revert if they didn't want it).
+    if (newDate && rootRef.source === 'day' && newDate !== rootRef.key && (!parentPath || !parentPath.length)) {
+      const fromKey = rootRef.key;
+      const fromNode = getNode('day', fromKey);
+      const idx = fromNode.tasks.indexOf(task);
+      const toNode = getNode('day', newDate);
+      if (idx >= 0) {
+        fromNode.tasks.splice(idx, 1);
+        toNode.tasks.push(task);
+        saveState();
+        recordChange(
+          `Moved "${(task.text || 'task').slice(0, 30)}" → ${newDate}`,
+          () => { const i = toNode.tasks.indexOf(task); if (i >= 0) toNode.tasks.splice(i, 1); fromNode.tasks.splice(idx, 0, task); },
+          () => { const i = fromNode.tasks.indexOf(task); if (i >= 0) fromNode.tasks.splice(i, 1); toNode.tasks.push(task); }
+        );
+        closeModal();
+        return;
       }
     }
     renderModal();
@@ -3053,9 +3125,14 @@ function renderEodReport(parentEl, id) {
   clr.style.cssText = 'background:transparent;border:1px solid rgba(255,69,58,0.30);color:var(--bad);padding:6px 12px;border-radius:7px;font-size:11.5px;cursor:pointer;font-family:inherit;margin-top:14px';
   clr.textContent = '× Clear end-of-day report';
   clr.addEventListener('click', () => {
-    if (!confirm('Clear this end-of-day report? (Habits + tomorrow tasks already added stay.)')) return;
+    const removed = state.dayReports[id];
     delete state.dayReports[id];
     saveState();
+    recordChange(
+      `Cleared end-of-day report for ${id}`,
+      () => { state.dayReports[id] = removed; },
+      () => { delete state.dayReports[id]; }
+    );
     renderModal();
   });
   section.appendChild(clr);
@@ -3328,11 +3405,17 @@ function habitCard(h) {
   editBtn.addEventListener('click', () => openHabit(h.id));
   head.appendChild(editBtn);
   const delBtn = document.createElement('button'); delBtn.className = 'hc-del'; delBtn.textContent = '×';
-  delBtn.title = 'Delete habit';
+  delBtn.title = 'Delete habit (undoable)';
   delBtn.addEventListener('click', () => {
-    if (!confirm(`Delete habit "${h.name}"? All history is removed.`)) return;
-    state.habits = state.habits.filter(x => x.id !== h.id);
+    const idx = state.habits.findIndex(x => x.id === h.id);
+    if (idx < 0) return;
+    const removed = state.habits.splice(idx, 1)[0];
     saveState();
+    recordChange(
+      `Deleted habit: ${(removed.name || 'habit').slice(0, 30)}`,
+      () => state.habits.splice(idx, 0, removed),
+      () => { const i = state.habits.findIndex(x => x.id === removed.id); if (i >= 0) state.habits.splice(i, 1); }
+    );
     renderHabits();
   });
   head.appendChild(delBtn);
@@ -3664,9 +3747,14 @@ function openHabit(id) {
           v.textContent = e.value != null && e.value !== '' ? `${e.value}${h.unit ? ' ' + h.unit : ''}` : '✓ done';
           const del = document.createElement('button'); del.className = 'del'; del.textContent = '×';
           del.addEventListener('click', () => {
-            if (!confirm(`Delete entry for ${date}?`)) return;
+            const removed = h.entries[date];
             delete h.entries[date];
             saveState();
+            recordChange(
+              `Removed ${h.name || 'habit'} entry on ${date}`,
+              () => { h.entries[date] = removed; },
+              () => { delete h.entries[date]; }
+            );
             renderModal();
           });
           row.appendChild(d); row.appendChild(v); row.appendChild(del);
@@ -3720,9 +3808,15 @@ function renderSettings() {
   bl.querySelectorAll('[data-act="delete-bk"]').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.bk;
-      if (!confirm('Delete this bucket? Tasks using it become uncategorised.')) return;
-      state.buckets = state.buckets.filter(b => b.id !== id);
+      const idx = state.buckets.findIndex(b => b.id === id);
+      if (idx < 0) return;
+      const removed = state.buckets.splice(idx, 1)[0];
       saveState();
+      recordChange(
+        `Deleted bucket: ${(removed.label || 'bucket').slice(0, 30)}`,
+        () => state.buckets.splice(idx, 0, removed),
+        () => { const i = state.buckets.findIndex(b => b.id === removed.id); if (i >= 0) state.buckets.splice(i, 1); }
+      );
       renderSettings();
     });
   });
@@ -3752,9 +3846,15 @@ function renderSettings() {
   gl.querySelectorAll('[data-act="delete-gt"]').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.gt;
-      if (!confirm('Delete this goal template? Existing tasks keep their goal definitions.')) return;
-      state.goalTemplates = state.goalTemplates.filter(g => g.id !== id);
+      const idx = state.goalTemplates.findIndex(g => g.id === id);
+      if (idx < 0) return;
+      const removed = state.goalTemplates.splice(idx, 1)[0];
       saveState();
+      recordChange(
+        `Deleted goal template: ${(removed.label || 'template').slice(0, 30)}`,
+        () => state.goalTemplates.splice(idx, 0, removed),
+        () => { const i = state.goalTemplates.findIndex(g => g.id === removed.id); if (i >= 0) state.goalTemplates.splice(i, 1); }
+      );
       renderSettings();
     });
   });
@@ -3816,6 +3916,93 @@ document.getElementById('wipe-all').addEventListener('click', () => {
   state = { ...defaultState(), quarters: { Q1: {tasks:[],notes:''}, Q2: {tasks:[],notes:''}, Q3: {tasks:[],notes:''}, Q4: {tasks:[],notes:''} }, days: {}, weeks: {}, monthProjects: {}, monthKPIs: {}, monthNotes: {} };
   saveState(); setView('dashboard');
 });
+
+// ─────────────────────────────────────────────────────────────────────
+// Undo / redo — every destructive action records {undo, redo} closures.
+// A floating bar at bottom-right shows the most-recent action with
+// undo + redo buttons. Cmd+Z / Ctrl+Z = undo, +Shift = redo.
+// ─────────────────────────────────────────────────────────────────────
+const undoStack = [];
+const redoStack = [];
+const UNDO_LIMIT = 50;
+
+function recordChange(label, undoFn, redoFn) {
+  undoStack.push({ label, undo: undoFn, redo: redoFn });
+  if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+  redoStack.length = 0;
+  updateUndoBar();
+}
+
+function rerenderActiveView() {
+  if (state.activeView === 'dashboard') renderDashboard();
+  else if (state.activeView === 'month') renderMonth();
+  else if (state.activeView === 'habits') renderHabits();
+  else if (state.activeView === 'settings') renderSettings();
+  if (modalStack.length) renderModal();
+}
+
+function performUndo() {
+  const item = undoStack.pop();
+  if (!item) return;
+  try { item.undo(); }
+  catch (e) { console.error('undo failed', e); }
+  redoStack.push(item);
+  saveState();
+  updateUndoBar();
+  rerenderActiveView();
+}
+function performRedo() {
+  const item = redoStack.pop();
+  if (!item) return;
+  try { item.redo(); }
+  catch (e) { console.error('redo failed', e); }
+  undoStack.push(item);
+  saveState();
+  updateUndoBar();
+  rerenderActiveView();
+}
+
+function updateUndoBar() {
+  const bar = document.getElementById('undo-bar');
+  const lbl = document.getElementById('undo-label');
+  const u = document.getElementById('undo-btn');
+  const r = document.getElementById('redo-btn');
+  const hasUndo = undoStack.length > 0;
+  const hasRedo = redoStack.length > 0;
+  if (!hasUndo && !hasRedo) { bar.classList.remove('show'); return; }
+  bar.classList.add('show');
+  if (hasUndo) lbl.textContent = undoStack[undoStack.length - 1].label;
+  else if (hasRedo) lbl.textContent = `Undone: ${redoStack[redoStack.length - 1].label}`;
+  u.disabled = !hasUndo;
+  r.disabled = !hasRedo;
+}
+
+document.getElementById('undo-btn').addEventListener('click', performUndo);
+document.getElementById('redo-btn').addEventListener('click', performRedo);
+document.addEventListener('keydown', e => {
+  const meta = e.metaKey || e.ctrlKey;
+  if (!meta) return;
+  // Don't hijack while user is typing in an input/textarea
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || e.target.isContentEditable) return;
+  if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); performUndo(); }
+  else if ((e.key === 'z' && e.shiftKey) || e.key === 'y') { e.preventDefault(); performRedo(); }
+});
+
+// Convenience: delete a task from any container with undo support.
+function deleteTaskFromContainer(container, task, labelPrefix = 'Deleted task') {
+  const idx = container.tasks.indexOf(task);
+  if (idx < 0) return false;
+  const removed = container.tasks.splice(idx, 1)[0];
+  saveState();
+  const txt = (removed.text || '').trim() || '(empty task)';
+  recordChange(
+    `${labelPrefix}: ${txt.length > 40 ? txt.slice(0, 39) + '…' : txt}`,
+    () => container.tasks.splice(idx, 0, removed),
+    () => container.tasks.splice(idx, 1)
+  );
+  return true;
+}
 
 // Sidebar collapse toggle
 function applySidebarState() {
