@@ -1348,41 +1348,37 @@
   [data-view-pane="month"] .day-card .cell {
     font-size: 11px; padding: 3px 8px; min-height: 22px;
     position: relative;
+    transition: padding 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                font-size 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                background 0.15s ease,
+                border-color 0.15s ease,
+                box-shadow 0.18s ease,
+                min-height 0.18s ease;
   }
   [data-view-pane="month"] .day-card .cell .text {
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+    transition: white-space 0.18s ease;
   }
-  /* Hover popover: full task text in bigger / bolder font, lifted above
-     adjacent cells via z-index + the :has() escape on the day-card. */
-  [data-view-pane="month"] .day-card .cell::after {
-    content: attr(data-full);
-    position: absolute;
-    left: 0;
-    bottom: calc(100% + 6px);
-    background: var(--tooltip-bg);
-    border: 1px solid var(--accent);
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 14px;
-    font-weight: 700;
+  /* On hover the cell itself smoothly enlarges — bigger font, bolder
+     text, wrapped lines, a soft shadow lift. No separate popover. */
+  [data-view-pane="month"] .day-card .cell:hover {
+    background: var(--accent-tint);
+    border-color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 11px;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.45);
+    z-index: 50;
+    min-height: 30px;
+  }
+  [data-view-pane="month"] .day-card .cell:hover .text {
     white-space: normal;
-    min-width: 200px;
-    max-width: 320px;
-    z-index: 1000;
-    box-shadow: 0 14px 36px rgba(0,0,0,0.6);
-    color: var(--text);
-    line-height: 1.4;
-    opacity: 0;
-    pointer-events: none;
-    visibility: hidden;
-    transition: opacity 0.15s ease 0.25s, visibility 0s linear 0.4s;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.35;
   }
-  [data-view-pane="month"] .day-card .cell[data-full]:hover::after {
-    opacity: 1;
-    visibility: visible;
-    transition: opacity 0.15s ease 0.25s, visibility 0s linear 0s;
-  }
-  /* When a cell is hovered, let the popover escape the day-card overflow */
+  /* Let the enlarged cell escape its day-card overflow so the wrapped
+     text isn't clipped — uses CSS :has(). */
   [data-view-pane="month"] .day-card:has(.cell:hover) {
     overflow: visible;
     z-index: 100;
