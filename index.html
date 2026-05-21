@@ -2048,18 +2048,24 @@ function migrateState(s) {
   out.monthNotes = s.monthNotes || {};
   out.buckets = Array.isArray(s.buckets) && s.buckets.length ? s.buckets : structuredClone(DEFAULT_BUCKETS);
   out.goalTemplates = Array.isArray(s.goalTemplates) && s.goalTemplates.length ? s.goalTemplates : structuredClone(DEFAULT_GOAL_TEMPLATES);
-  out.habits = Array.isArray(s.habits) ? s.habits.map(h => ({
-    id: h.id || ('h-' + uid().slice(2)),
-    name: h.name || '',
-    icon: h.icon || '🎯',
-    color: h.color || '#5e9eff',
-    frequency: h.frequency || 'daily',                                 // daily | weekly | days
-    daysOfWeek: Array.isArray(h.daysOfWeek) ? h.daysOfWeek : [0,1,2,3,4,5,6],  // 0=Mon..6=Sun
-    target: Number(h.target) || 0,
-    unit: h.unit || '',
-    startDate: h.startDate || todayIso(),
-    entries: h.entries && typeof h.entries === 'object' ? h.entries : {},
-  })) : [];
+  out.habits = Array.isArray(s.habits) ? s.habits.map(h => {
+    // Infer type for legacy habits: has target+unit → value tracker; else checkbox
+    const inferredType = (h.target && h.unit) ? 'value' : 'checkbox';
+    return {
+      id: h.id || ('h-' + uid().slice(2)),
+      name: h.name || '',
+      icon: h.icon || '🎯',
+      color: h.color || '#5e9eff',
+      type: (h.type === 'value' || h.type === 'checkbox') ? h.type : inferredType,
+      category: h.category || 'general',     // health | mind | work | personal | nutrition | general
+      frequency: h.frequency || 'daily',     // daily | weekly | days
+      daysOfWeek: Array.isArray(h.daysOfWeek) ? h.daysOfWeek : [0,1,2,3,4,5,6],
+      target: Number(h.target) || 0,
+      unit: h.unit || '',
+      startDate: h.startDate || todayIso(),
+      entries: h.entries && typeof h.entries === 'object' ? h.entries : {},
+    };
+  }) : [];
   out.dayReports = (s.dayReports && typeof s.dayReports === 'object') ? s.dayReports : {};
   out.monthMantras = (s.monthMantras && typeof s.monthMantras === 'object') ? s.monthMantras : {};
   out.sidebarCollapsed = !!s.sidebarCollapsed;
@@ -3524,24 +3530,25 @@ function renderScheduleSection(parentEl, task, rootRef, parentPath) {
 
 // By-bucket grouped view (used by week + month modals).
 // taskBundles: array of { task, contextLabel, source, key }
-// Each .bucket-group becomes a drop target — drop a task on a group to
-// assign it to that bucket. Rows inside groups are draggable too so you
-// can move tasks between buckets without going back to the calendar.
+// opts.defaultContainer: { source, key } where "+ Add" inserts new tasks
+// (the new task gets the group's bucket pre-assigned).
 function renderBucketGroupedView(parentEl, taskBundles, opts) {
-  const { title = 'By bucket' } = opts || {};
+  const { title = 'By bucket', defaultContainer = null } = opts || {};
   const section = document.createElement('div');
   section.className = 'modal-section';
   const h = document.createElement('h3'); h.textContent = title;
   section.appendChild(h);
   const sub = document.createElement('div');
   sub.style.cssText = 'color:var(--text-tertiary);font-size:11.5px;margin:-6px 0 8px';
-  sub.textContent = 'Drag any task into a bucket below to assign it.';
+  sub.textContent = defaultContainer
+    ? 'Drag any task into a bucket below to assign it. Use + Add to type a new one straight into a bucket.'
+    : 'Drag any task into a bucket below to assign it.';
   section.appendChild(sub);
-  // Group by bucket id (always show all buckets + uncategorised so they're
-  // valid drop targets even when empty).
+  // Group by bucket id. Uncategorised always rendered FIRST (top of list)
+  // so it's the obvious inbox to drop / add into.
+  const ordered = ['_none', ...state.buckets.map(b => b.id)];
   const groups = new Map();
-  state.buckets.forEach(b => groups.set(b.id, []));
-  groups.set('_none', []);
+  ordered.forEach(id => groups.set(id, []));
   taskBundles.forEach(b => {
     const k = b.task.bucket || '_none';
     if (!groups.has(k)) groups.set(k, []);
@@ -3553,10 +3560,10 @@ function renderBucketGroupedView(parentEl, taskBundles, opts) {
     const gh = document.createElement('div'); gh.className = 'bg-head';
     const dot = document.createElement('span'); dot.className = 'bg-dot';
     const b = getBucket(k);
-    dot.style.background = b ? b.color : 'rgba(127,127,127,0.4)';
+    dot.style.background = b ? b.color : 'rgba(127,127,127,0.5)';
     gh.appendChild(dot);
     const lbl = document.createElement('span');
-    lbl.textContent = b ? `${b.icon || ''} ${b.label}`.trim() : 'Uncategorised';
+    lbl.textContent = b ? `${b.icon || ''} ${b.label}`.trim() : 'Uncategorised · inbox';
     gh.appendChild(lbl);
     const cnt = document.createElement('span'); cnt.className = 'bg-count';
     const doneCt = items.filter(x => x.task.done).length;
@@ -3565,7 +3572,7 @@ function renderBucketGroupedView(parentEl, taskBundles, opts) {
     grp.appendChild(gh);
     if (!items.length) {
       const empty = document.createElement('div'); empty.className = 'bg-empty';
-      empty.textContent = 'Drop a task here to add it.';
+      empty.textContent = 'Drop a task here or click + Add below.';
       grp.appendChild(empty);
     }
     items.forEach(({ task, contextLabel, source, key }) => {
@@ -3582,6 +3589,45 @@ function renderBucketGroupedView(parentEl, taskBundles, opts) {
       if (source && key) makeCellDraggable(row, source, key, task.id);
       grp.appendChild(row);
     });
+    // "+ Add task" inline input → creates a task in defaultContainer with
+    // bucket = this group. Reuses the same swap-input pattern as renderCells.
+    if (defaultContainer) {
+      const add = document.createElement('button');
+      add.className = 'add-cell';
+      add.style.marginTop = items.length ? '6px' : '0';
+      add.textContent = '+ Add task';
+      add.addEventListener('click', ev => {
+        ev.stopPropagation();
+        const inp = document.createElement('input');
+        inp.className = 'add-input';
+        inp.placeholder = `Type a task for ${b ? b.label : 'Uncategorised'} and press Enter…`;
+        add.replaceWith(inp);
+        inp.focus();
+        let committed = false;
+        function commit() {
+          if (committed) return;
+          committed = true;
+          const v = inp.value.trim();
+          if (!v) { inp.replaceWith(add); return; }
+          const dst = getNode(defaultContainer.source, defaultContainer.key);
+          const newTask = tk(v, { bucket: k === '_none' ? null : k });
+          dst.tasks.push(newTask);
+          saveState();
+          recordChange(
+            `Added "${v.length > 30 ? v.slice(0,29)+'…' : v}" to ${b ? b.label : 'Uncategorised'}`,
+            () => { const i = dst.tasks.indexOf(newTask); if (i >= 0) dst.tasks.splice(i, 1); },
+            () => dst.tasks.push(newTask)
+          );
+          renderModal();
+        }
+        inp.addEventListener('keydown', e => {
+          if (e.key === 'Enter') { e.preventDefault(); commit(); }
+          else if (e.key === 'Escape') { committed = true; inp.replaceWith(add); }
+        });
+        inp.addEventListener('blur', () => setTimeout(commit, 100));
+      });
+      grp.appendChild(add);
+    }
     // Bucket-group drop target — drop a task to assign it to this bucket
     makeBucketDropTarget(grp, k === '_none' ? null : k);
     section.appendChild(grp);
@@ -3691,10 +3737,10 @@ function renderEodReport(parentEl, id) {
       const icon = document.createElement('span'); icon.className = 'h-icon'; icon.textContent = h.icon || '🎯';
       row.appendChild(icon);
       const name = document.createElement('span'); name.className = 'h-name';
-      name.textContent = `${h.name}${h.target ? ` (${h.target}${h.unit || ''})` : ''}`;
+      name.textContent = `${h.name}${h.type === 'value' && h.target ? ` (target ${h.target}${h.unit || ''})` : ''}`;
       row.appendChild(name);
       const existing = (h.entries && h.entries[id]) || null;
-      if (h.target && h.unit) {
+      if (h.type === 'value') {
         const inp = document.createElement('input');
         inp.type = 'number'; inp.step = 'any';
         inp.placeholder = h.unit;
@@ -3884,7 +3930,10 @@ function openWeek(monday) {
       ds.appendChild(grid);
       body.appendChild(ds);
 
-      renderBucketGroupedView(body, dayBundles, { title: 'By bucket' });
+      renderBucketGroupedView(body, dayBundles, {
+        title: 'By bucket',
+        defaultContainer: { source: 'week', key: monday },
+      });
       renderModalNotesSection(body, n, { title: 'Notes', placeholder: 'How did the week go?' });
     },
   });
@@ -3902,7 +3951,7 @@ function openMonth(y, m) {
       const totalDays = daysInMonth(y, m);
       const filled = Array.from({ length: totalDays }, (_, i) => isoDate(y, m, i + 1)).filter(id => (state.days[id]?.tasks?.length || 0) > 0).length;
       const meta = document.createElement('div'); meta.className = 'meta';
-      meta.textContent = `${filled}/${totalDays} days have tasks · ${projects.tasks.length} projects · ${kpis.tasks.length} KPIs`;
+      meta.textContent = `${projects.tasks.length} monthly projects · ${kpis.tasks.length} KPIs · big-picture only (day tasks live on the calendar)`;
       body.appendChild(meta);
       renderModalTaskSection(body, projects, {
         title: 'Main projects', addLabel: '+ Add project', count: projects.tasks.length,
@@ -3914,15 +3963,16 @@ function openMonth(y, m) {
         openTaskById: (tid) => openTaskFromContainer({ source: 'monthKPIs', key: monthKey }, tid),
         source: 'monthKPIs', key: monthKey,
       });
-      // By-bucket view across all month tasks (projects + KPIs + day tasks)
+      // By-bucket view — month is goals-only. Projects + KPIs (the big
+      // monthly goals) are grouped by bucket. Day-level tasks are NOT
+      // pulled in here; the month modal stays high-level.
       const bundles = [];
       projects.tasks.forEach(t => bundles.push({ task: t, contextLabel: 'Project', source: 'monthProjects', key: monthKey }));
       kpis.tasks.forEach(t => bundles.push({ task: t, contextLabel: 'KPI', source: 'monthKPIs', key: monthKey }));
-      for (let day = 1; day <= totalDays; day++) {
-        const did = isoDate(y, m, day);
-        (state.days[did]?.tasks || []).forEach(t => bundles.push({ task: t, contextLabel: `${day}`, source: 'day', key: did }));
-      }
-      renderBucketGroupedView(body, bundles, { title: 'By bucket (whole month)' });
+      renderBucketGroupedView(body, bundles, {
+        title: 'Goals by bucket',
+        defaultContainer: { source: 'monthProjects', key: monthKey },
+      });
       // Month-level notes — use rich editor backed by state.monthNotes
       const monthNotesContainer = {
         get notes() { return state.monthNotes[monthKey] || ''; },
@@ -3983,6 +4033,67 @@ function openTaskFromContainer(rootRef, taskId, parentPath = []) {
 // ─────────────────────────────────────────────────────────────────────
 // Habits page
 // ─────────────────────────────────────────────────────────────────────
+const HABIT_CATEGORIES = [
+  { id: 'health',    label: 'Health & Fitness', icon: '💪', color: '#30d158' },
+  { id: 'mind',      label: 'Mind & Learning',  icon: '🧠', color: '#5e9eff' },
+  { id: 'work',      label: 'Work & Productivity', icon: '🎯', color: '#d4a017' },
+  { id: 'personal',  label: 'Personal Growth',  icon: '🌱', color: '#bf5af2' },
+  { id: 'nutrition', label: 'Diet & Nutrition', icon: '🍎', color: '#ff9f0a' },
+  { id: 'general',   label: 'General',          icon: '✨', color: '#9a9aa3' },
+];
+function getHabitCategory(id) { return HABIT_CATEGORIES.find(c => c.id === id) || HABIT_CATEGORIES[HABIT_CATEGORIES.length - 1]; }
+
+// Quick-start templates — a life-coach starter pack. Picking one pre-fills
+// the new habit with sensible defaults.
+const HABIT_TEMPLATES = [
+  { name: 'Weigh-in',     icon: '⚖️',  color: '#30d158', type: 'value',    category: 'health',    target: 80,  unit: 'kg',  frequency: 'daily' },
+  { name: 'Sleep hours',  icon: '😴',  color: '#5e9eff', type: 'value',    category: 'health',    target: 8,   unit: 'h',   frequency: 'daily' },
+  { name: 'Steps',        icon: '🚶',  color: '#30d158', type: 'value',    category: 'health',    target: 10000, unit: 'steps', frequency: 'daily' },
+  { name: 'Water',        icon: '💧',  color: '#5e9eff', type: 'value',    category: 'nutrition', target: 8,   unit: 'cups',frequency: 'daily' },
+  { name: 'Workout',      icon: '🏋️', color: '#30d158', type: 'checkbox', category: 'health',    target: 0,   unit: '',    frequency: 'days', daysOfWeek: [0,2,4] },
+  { name: 'Meditation',   icon: '🧘',  color: '#bf5af2', type: 'checkbox', category: 'mind',      target: 0,   unit: '',    frequency: 'daily' },
+  { name: 'Read',         icon: '📖',  color: '#bf5af2', type: 'value',    category: 'mind',      target: 30,  unit: 'min', frequency: 'daily' },
+  { name: 'Padel',        icon: '🎾',  color: '#30d158', type: 'checkbox', category: 'health',    target: 0,   unit: '',    frequency: 'days', daysOfWeek: [1,3,5] },
+  { name: 'Deep work',    icon: '🎯',  color: '#d4a017', type: 'value',    category: 'work',      target: 4,   unit: 'hr',  frequency: 'daily' },
+  { name: 'No alcohol',   icon: '🚫',  color: '#ff9f0a', type: 'checkbox', category: 'nutrition', target: 0,   unit: '',    frequency: 'daily' },
+];
+
+// Weekly streak: count consecutive ISO weeks (Mon-Sun) where the habit was
+// logged on at least one applicable day. Counts back from this week.
+function habitWeeklyStreak(habit) {
+  let streak = 0;
+  let cursor = new Date(todayIso());
+  for (let i = 0; i < 200; i++) {
+    const monday = new Date(cursor);
+    monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+    let anyApplies = false;
+    let anyDone = false;
+    for (let d = 0; d < 7; d++) {
+      const day = new Date(monday); day.setDate(day.getDate() + d);
+      const iso = isoDate(day.getFullYear(), day.getMonth(), day.getDate());
+      if (iso > todayIso()) continue;     // don't count days that haven't happened yet
+      if (!habitApplies(habit, iso)) continue;
+      anyApplies = true;
+      const entry = habit.entries && habit.entries[iso];
+      if (entry && (entry.done || (entry.value != null && entry.value !== ''))) {
+        anyDone = true;
+        break;
+      }
+    }
+    if (!anyApplies) {
+      cursor = new Date(monday); cursor.setDate(cursor.getDate() - 1);
+      continue;
+    }
+    if (anyDone) {
+      streak++;
+      cursor = new Date(monday); cursor.setDate(cursor.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
 function habitApplies(habit, isoStr) {
   // Returns true if this habit is scheduled for the given ISO date.
   if (isoStr < habit.startDate) return false;
@@ -4067,12 +4178,38 @@ function habitCard(h) {
   });
   head.appendChild(delBtn);
   body.appendChild(head);
-  // Streak
-  const streak = habitStreak(h);
-  if (streak > 0) {
-    const s = document.createElement('div'); s.className = 'hc-streak';
-    s.innerHTML = `🔥 ${streak}-day streak`;
-    body.appendChild(s);
+  // Type + category badge row
+  const badges = document.createElement('div');
+  badges.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;align-items:center';
+  const cat = getHabitCategory(h.category);
+  const typeBadge = document.createElement('span');
+  typeBadge.style.cssText = 'font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:0.04em;background:' + (h.type === 'value' ? 'rgba(94,158,255,0.18)' : 'rgba(48,209,88,0.18)') + ';color:' + (h.type === 'value' ? '#7eb6ff' : '#62e88a');
+  typeBadge.textContent = h.type === 'value' ? `📊 ${h.unit || 'value'} tracker` : '✓ Habit';
+  badges.appendChild(typeBadge);
+  const catBadge = document.createElement('span');
+  catBadge.style.cssText = 'font-size:10.5px;font-weight:600;color:var(--text-tertiary);';
+  catBadge.textContent = `${cat.icon} ${cat.label}`;
+  badges.appendChild(catBadge);
+  body.appendChild(badges);
+  // Streaks (daily + weekly)
+  const dStreak = habitStreak(h);
+  const wStreak = habitWeeklyStreak(h);
+  if (dStreak > 0 || wStreak > 0) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-top:6px';
+    if (dStreak > 0) {
+      const s = document.createElement('div'); s.className = 'hc-streak';
+      s.innerHTML = `🔥 ${dStreak}-day streak`;
+      row.appendChild(s);
+    }
+    if (wStreak > 0) {
+      const s = document.createElement('div'); s.className = 'hc-streak';
+      s.style.background = 'rgba(48,209,88,0.18)';
+      s.style.color = '#62e88a';
+      s.innerHTML = `📅 ${wStreak}-week streak`;
+      row.appendChild(s);
+    }
+    body.appendChild(row);
   }
   // History: last 14 days
   const hist = document.createElement('div'); hist.className = 'hc-history';
@@ -4099,10 +4236,9 @@ function habitCard(h) {
     dn.title = iso + (applies ? (entry ? ' — logged' : ' — not logged') : ' — not scheduled');
     dn.addEventListener('click', () => {
       if (!applies) return;
-      // Toggle done (binary) for click; for numeric, prompt for value
       if (!h.entries) h.entries = {};
-      if (h.target && h.unit) {
-        const v = prompt(`Log value for ${iso} (${h.unit}):`, entry?.value ?? '');
+      if (h.type === 'value') {
+        const v = prompt(`Log value for ${iso} (${h.unit || 'value'}):`, entry?.value ?? '');
         if (v == null) return;
         if (v === '') { delete h.entries[iso]; }
         else { h.entries[iso] = { value: parseFloat(v), done: true }; }
@@ -4119,13 +4255,13 @@ function habitCard(h) {
   // Log today
   const log = document.createElement('div'); log.className = 'hc-log';
   const inp = document.createElement('input');
-  if (h.target && h.unit) {
+  if (h.type === 'value') {
     inp.type = 'number'; inp.step = 'any';
-    inp.placeholder = `Today's ${h.unit}${h.target ? ` (target ${h.target})` : ''}`;
+    inp.placeholder = `Today's ${h.unit || 'value'}${h.target ? ` (target ${h.target})` : ''}`;
     const existing = h.entries && h.entries[today];
     if (existing && existing.value != null) inp.value = existing.value;
   } else {
-    inp.type = 'text'; inp.placeholder = 'Today: tap button to mark done →'; inp.disabled = true;
+    inp.type = 'text'; inp.placeholder = 'Tap button to mark done →'; inp.disabled = true;
     inp.style.opacity = '0.5';
   }
   const btn = document.createElement('button');
@@ -4133,7 +4269,7 @@ function habitCard(h) {
   btn.textContent = todayDone ? '✓ Done today' : 'Log today';
   btn.addEventListener('click', () => {
     if (!h.entries) h.entries = {};
-    if (h.target && h.unit) {
+    if (h.type === 'value') {
       const v = parseFloat(inp.value);
       if (!isFinite(v)) { alert('Enter a number first'); return; }
       h.entries[today] = { value: v, done: true };
@@ -4312,6 +4448,28 @@ function openHabit(id) {
       meta.textContent = `Started ${h.startDate} · ${habitStreak(h)}-day streak · ${Object.keys(h.entries || {}).length} entries logged`;
       body.appendChild(meta);
 
+      // Type picker (value tracker vs checkbox habit) — drives which
+      // inputs show below + how the day-view UI renders entries.
+      const typeSection = document.createElement('div'); typeSection.className = 'modal-section';
+      const tsh = document.createElement('h3'); tsh.textContent = 'Type';
+      typeSection.appendChild(tsh);
+      const tRow = document.createElement('div');
+      tRow.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:8px';
+      [
+        { id: 'value',    icon: '📊', label: 'Value tracker', desc: 'Log a number (kg, hours, count)' },
+        { id: 'checkbox', icon: '✓',  label: 'Habit',         desc: 'Did I do it? (yes / no)' },
+      ].forEach(t => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        const isActive = h.type === t.id;
+        btn.style.cssText = `background:${isActive ? 'var(--accent-tint)' : 'var(--surface)'};border:1.5px solid ${isActive ? 'var(--accent)' : 'var(--border)'};border-radius:9px;padding:10px 12px;cursor:pointer;text-align:left;font-family:inherit;color:var(--text);display:flex;flex-direction:column;gap:2px`;
+        btn.innerHTML = `<div style="font-weight:700;font-size:13px">${t.icon} ${t.label}</div><div style="font-size:11px;color:var(--text-tertiary)">${t.desc}</div>`;
+        btn.addEventListener('click', () => { h.type = t.id; saveState(); renderModal(); });
+        tRow.appendChild(btn);
+      });
+      typeSection.appendChild(tRow);
+      body.appendChild(typeSection);
+
       const section = document.createElement('div'); section.className = 'modal-section';
       const sh = document.createElement('h3'); sh.textContent = 'Details';
       section.appendChild(sh);
@@ -4327,6 +4485,16 @@ function openHabit(id) {
       colorI.style.height = '36px';
       colorI.addEventListener('input', e => { h.color = e.target.value; saveState(); renderModal(); });
       colorG.appendChild(colorI); form.appendChild(colorG);
+      // Category (life-coach style)
+      const catG = document.createElement('div'); catG.innerHTML = '<label>Life area</label>';
+      const catS = document.createElement('select');
+      HABIT_CATEGORIES.forEach(c => {
+        const o = document.createElement('option'); o.value = c.id; o.textContent = `${c.icon} ${c.label}`;
+        if (h.category === c.id) o.selected = true;
+        catS.appendChild(o);
+      });
+      catS.addEventListener('change', () => { h.category = catS.value; saveState(); renderModal(); });
+      catG.appendChild(catS); form.appendChild(catG);
       // Frequency
       const freqG = document.createElement('div'); freqG.innerHTML = '<label>Frequency</label>';
       const freqS = document.createElement('select');
@@ -4342,15 +4510,17 @@ function openHabit(id) {
       const sdI = document.createElement('input'); sdI.type = 'date'; sdI.value = h.startDate;
       sdI.addEventListener('change', e => { h.startDate = e.target.value || todayIso(); saveState(); renderModal(); });
       sdG.appendChild(sdI); form.appendChild(sdG);
-      // Target / unit
-      const tgG = document.createElement('div'); tgG.innerHTML = '<label>Target value (optional)</label>';
-      const tgI = document.createElement('input'); tgI.type = 'number'; tgI.step = 'any'; tgI.placeholder = '80';
-      tgI.value = h.target || ''; tgI.addEventListener('input', e => { h.target = parseFloat(e.target.value) || 0; saveState(); });
-      tgG.appendChild(tgI); form.appendChild(tgG);
-      const unG = document.createElement('div'); unG.innerHTML = '<label>Unit</label>';
-      const unI = document.createElement('input'); unI.type = 'text'; unI.placeholder = 'kg / min / x';
-      unI.value = h.unit || ''; unI.addEventListener('input', e => { h.unit = e.target.value; saveState(); });
-      unG.appendChild(unI); form.appendChild(unG);
+      // Target / unit — only for value-type habits
+      if (h.type === 'value') {
+        const tgG = document.createElement('div'); tgG.innerHTML = '<label>Target value</label>';
+        const tgI = document.createElement('input'); tgI.type = 'number'; tgI.step = 'any'; tgI.placeholder = '80';
+        tgI.value = h.target || ''; tgI.addEventListener('input', e => { h.target = parseFloat(e.target.value) || 0; saveState(); });
+        tgG.appendChild(tgI); form.appendChild(tgG);
+        const unG = document.createElement('div'); unG.innerHTML = '<label>Unit</label>';
+        const unI = document.createElement('input'); unI.type = 'text'; unI.placeholder = 'kg / min / cups';
+        unI.value = h.unit || ''; unI.addEventListener('input', e => { h.unit = e.target.value; saveState(); });
+        unG.appendChild(unI); form.appendChild(unG);
+      }
       // Days-of-week toggles
       if (h.frequency === 'days') {
         const dwG = document.createElement('div'); dwG.className = 'full';
@@ -4517,22 +4687,80 @@ function renderSettings() {
 // Wiring
 // ─────────────────────────────────────────────────────────────────────
 document.querySelectorAll('.sidebar .nav-item').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
-document.getElementById('add-habit-btn').addEventListener('click', () => {
-  // Create a new habit immediately with sensible defaults, then open its
-  // modal so the user fills in the details (no prompt).
-  const h = {
-    id: 'h-' + uid().slice(2),
-    name: '', icon: '🎯', color: '#5e9eff',
-    frequency: 'daily', daysOfWeek: [0,1,2,3,4,5,6],
-    target: 0, unit: '',
-    startDate: todayIso(),
-    entries: {},
-  };
-  state.habits.push(h);
-  saveState();
-  renderHabits();
-  openHabit(h.id);
-});
+document.getElementById('add-habit-btn').addEventListener('click', openHabitTemplatePicker);
+
+// Show a modal with template tiles. Picking one creates the habit and
+// opens its detail modal so the user can tweak.
+function openHabitTemplatePicker() {
+  openModal({
+    crumb: 'New habit · <b>pick a template</b>',
+    render: (body) => {
+      const h = document.createElement('h1'); h.className = 'title-static';
+      h.textContent = 'New habit';
+      body.appendChild(h);
+      const meta = document.createElement('div'); meta.className = 'meta';
+      meta.textContent = 'Pick a template to start fast, or create a blank one.';
+      body.appendChild(meta);
+      const grid = document.createElement('div');
+      grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:8px';
+      HABIT_TEMPLATES.forEach(tpl => {
+        const tile = document.createElement('button');
+        tile.type = 'button';
+        tile.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 14px 12px;cursor:pointer;text-align:left;font-family:inherit;color:var(--text);display:flex;flex-direction:column;gap:4px;transition:border-color 0.12s';
+        tile.onmouseenter = () => tile.style.borderColor = tpl.color;
+        tile.onmouseleave = () => tile.style.borderColor = 'var(--border)';
+        const cat = getHabitCategory(tpl.category);
+        tile.innerHTML = `
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:22px">${tpl.icon}</span>
+            <span style="font-weight:700;font-size:15px;flex:1">${escapeHtml(tpl.name)}</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-tertiary);margin-top:4px">${tpl.type === 'value' ? `📊 ${tpl.target || ''}${tpl.unit ? ' ' + tpl.unit : ''} tracker` : '✓ Habit'} · ${cat.icon} ${cat.label} · ${tpl.frequency === 'days' ? (tpl.daysOfWeek || []).map(i => WEEKDAYS_SHORT[i]).join('/') : tpl.frequency}</div>
+        `;
+        tile.addEventListener('click', () => {
+          const newH = {
+            id: 'h-' + uid().slice(2),
+            name: tpl.name,
+            icon: tpl.icon, color: tpl.color,
+            type: tpl.type, category: tpl.category,
+            frequency: tpl.frequency, daysOfWeek: tpl.daysOfWeek || [0,1,2,3,4,5,6],
+            target: tpl.target || 0, unit: tpl.unit || '',
+            startDate: todayIso(),
+            entries: {},
+          };
+          state.habits.push(newH);
+          saveState();
+          modalStack.length = 0;
+          renderHabits();
+          openHabit(newH.id);
+        });
+        grid.appendChild(tile);
+      });
+      // Blank custom tile
+      const blank = document.createElement('button');
+      blank.type = 'button';
+      blank.style.cssText = 'background:transparent;border:1.5px dashed var(--border-strong);border-radius:10px;padding:14px;cursor:pointer;text-align:left;font-family:inherit;color:var(--text-tertiary);display:flex;flex-direction:column;gap:4px';
+      blank.innerHTML = '<div style="font-size:22px">＋</div><div style="font-weight:700;font-size:15px;color:var(--text)">Custom habit</div><div style="font-size:11px">Start blank, fill in everything yourself.</div>';
+      blank.addEventListener('click', () => {
+        const newH = {
+          id: 'h-' + uid().slice(2),
+          name: '', icon: '🎯', color: '#5e9eff',
+          type: 'checkbox', category: 'general',
+          frequency: 'daily', daysOfWeek: [0,1,2,3,4,5,6],
+          target: 0, unit: '',
+          startDate: todayIso(), entries: {},
+        };
+        state.habits.push(newH);
+        saveState();
+        modalStack.length = 0;
+        renderHabits();
+        openHabit(newH.id);
+      });
+      grid.appendChild(blank);
+      body.appendChild(grid);
+    },
+  });
+}
 document.getElementById('prev-month').addEventListener('click', () => { if (state.activeMonth === 0) { state.year--; state.activeMonth = 11; } else state.activeMonth--; saveState(); renderMonth(); });
 document.getElementById('next-month').addEventListener('click', () => { if (state.activeMonth === 11) { state.year++; state.activeMonth = 0; } else state.activeMonth++; saveState(); renderMonth(); });
 document.getElementById('today-btn').addEventListener('click', () => { const d = new Date(); state.year = d.getFullYear(); state.activeMonth = d.getMonth(); saveState(); renderMonth(); });
