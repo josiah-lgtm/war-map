@@ -619,16 +619,21 @@
   }
   .notes-area:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint); }
 
-  /* ─── Notion-style rich notes editor ────────────────────────────── */
+  /* ─── Notion-style rich notes editor (sharp + sleek) ────────────── */
   .notes-toolbar {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
-    margin-bottom: 6px;
-  }
-  .notes-toolbar button {
+    gap: 2px;
+    margin-bottom: 8px;
+    padding: 4px;
     background: var(--surface-raised);
     border: 1px solid var(--border);
+    border-radius: 9px;
+    align-items: center;
+  }
+  .notes-toolbar button {
+    background: transparent;
+    border: none;
     color: var(--text-secondary);
     padding: 5px 9px;
     font-size: 12px;
@@ -640,29 +645,42 @@
     gap: 4px;
     min-width: 28px;
     justify-content: center;
-    transition: border-color 0.12s, color 0.12s, background 0.12s;
+    transition: color 0.12s, background 0.12s;
+    font-weight: 500;
   }
   .notes-toolbar button:hover {
-    border-color: var(--accent);
-    color: var(--accent-hover);
-    background: var(--accent-tint);
+    color: var(--text);
+    background: rgba(255,255,255,0.08);
   }
-  .notes-toolbar button.divider-spacer { width: 1px; padding: 0; min-width: 1px; background: transparent; border: none; border-left: 1px solid var(--separator); margin: 0 4px; cursor: default; pointer-events: none; }
-  .notes-toolbar button.divider-spacer:hover { border-color: var(--separator); }
+  .notes-toolbar button:active {
+    background: var(--accent-tint);
+    color: var(--accent-hover);
+  }
+  .notes-toolbar .tb-sep {
+    width: 1px;
+    height: 18px;
+    background: var(--separator);
+    margin: 0 2px;
+    flex-shrink: 0;
+  }
 
   .notes-rich {
-    width: 100%; min-height: 140px;
+    width: 100%; min-height: 160px;
     background: var(--notes-bg);
     border: 1px solid var(--border-input);
     border-radius: 10px;
     color: var(--text);
-    font-size: 14px; line-height: 1.6;
-    padding: 12px 14px;
+    font-size: 14.5px; line-height: 1.65;
+    padding: 14px 18px;
     font-family: inherit;
     outline: none;
     overflow-y: auto;
+    letter-spacing: -0.005em;
   }
-  .notes-rich:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint); }
+  .notes-rich:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-tint);
+  }
   .notes-rich:empty::before {
     content: attr(data-placeholder);
     color: var(--text-tertiary);
@@ -1598,6 +1616,27 @@
   .bucket-tile.drop-active .bt-name,
   .bucket-tile.drop-active .bt-count,
   .bucket-tile.drop-active .bt-sub { color: #1a1a1a !important; }
+  /* Bucket-group header is clickable to collapse/expand */
+  .bucket-group .bg-head {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.12s;
+  }
+  .bucket-group .bg-head:hover { color: var(--accent-hover); }
+  .bucket-group .bg-caret {
+    color: var(--text-tertiary);
+    font-size: 10px;
+    transition: transform 0.18s ease;
+    margin-right: 4px;
+    flex-shrink: 0;
+  }
+  .bucket-group:not(.collapsed) .bg-caret { transform: rotate(90deg); }
+  .bucket-group.collapsed .bg-empty,
+  .bucket-group.collapsed .cell,
+  .bucket-group.collapsed .add-cell { display: none; }
+  .bucket-group.collapsed { padding-bottom: 8px; }
+  .bucket-group.collapsed .bg-head { margin-bottom: 0; }
+
   /* Drop-active feedback on the bucket-group in modals — make it obvious */
   .bucket-group {
     transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.12s;
@@ -1726,6 +1765,60 @@
     height: 22px;
   }
   [data-view-pane="dashboard"] .day-cell.has-tasks::after { width: 3px; height: 3px; bottom: 2px; right: 2px; }
+
+  /* ─── End-of-week / end-of-month report inside week / month modals ─ */
+  .eow-summary {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+  }
+  .eow-summary h4 {
+    margin: 0 0 10px;
+    font-size: 11.5px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-weight: 700;
+  }
+  .eow-habits-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--separator);
+    font-size: 13px;
+  }
+  .eow-habits-row:last-child { border: none; }
+  .eow-habits-row .ehr-icon { font-size: 16px; flex-shrink: 0; }
+  .eow-habits-row .ehr-name { flex: 1; color: var(--text); font-weight: 500; }
+  .eow-habits-row .ehr-meta {
+    font-size: 11.5px; color: var(--text-tertiary);
+    font-variant-numeric: tabular-nums;
+    margin-left: auto;
+    margin-right: 8px;
+  }
+  .eow-habits-row .ehr-bar {
+    width: 90px; height: 6px;
+    background: rgba(127,127,127,0.18);
+    border-radius: 999px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .eow-habits-row .ehr-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+    border-radius: 999px;
+  }
+  .eow-habits-row .ehr-fill.good { background: var(--good); }
+  .eow-habits-row .ehr-fill.warn { background: var(--warn); }
+  .eow-habits-row .ehr-fill.bad  { background: var(--bad); }
+  .eow-habits-row .ehr-pct {
+    width: 38px; text-align: right;
+    font-size: 12px; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
 
   /* ─── Undo / redo floating bar (bottom-right) ───────────────────── */
   .undo-bar {
@@ -2014,6 +2107,9 @@ function defaultState() {
     weekColRatios: [1, 1, 1, 1, 1, 1, 1, 1.4],
     weekColWidthsPx: null,
     theme: 'dark',          // 'dark' | 'light'
+    collapsedBuckets: {},   // { bucketId: true } — per-bucket collapse state
+    weekReports: {},        // { 'YYYY-MM-DD': { howItWent, wins, blockers, nextWeekGoals[3] } }
+    monthReports: {},       // { 'YYYY-MM': { howItWent, wins, blockers, nextMonthGoals[3] } }
   };
 }
 
@@ -2096,6 +2192,9 @@ function migrateState(s) {
   // in fit-to-viewport fr mode. The field is kept for backward compat.
   out.weekColWidthsPx = null;
   out.theme = (s.theme === 'light' || s.theme === 'dark') ? s.theme : 'dark';
+  out.collapsedBuckets = (s.collapsedBuckets && typeof s.collapsedBuckets === 'object') ? s.collapsedBuckets : {};
+  out.weekReports = (s.weekReports && typeof s.weekReports === 'object') ? s.weekReports : {};
+  out.monthReports = (s.monthReports && typeof s.monthReports === 'object') ? s.monthReports : {};
   return out;
 }
 
@@ -3158,7 +3257,7 @@ function attachBulletAutocontinue(ta) {
 // Persists HTML to container.notes. Legacy plain-text notes are auto-
 // converted to <div> lines on first render.
 function renderModalNotesSection(parentEl, container, opts) {
-  const { title = 'Notes', placeholder = 'Write notes here…  ⌘B bold · ⌘I italic · type "- " for a bullet' } = opts || {};
+  const { title = 'Notes', placeholder = 'Write notes here…  ⌘B bold · ⌘I italic · ⌘⇧8 bullet · ⌘⇧7 numbered · ⌘⇧2 heading · ⌘E code' } = opts || {};
   const section = document.createElement('div');
   section.className = 'modal-section';
   const h = document.createElement('h3'); h.textContent = title;
@@ -3192,8 +3291,7 @@ function buildRichNotes(parentEl, container, placeholder) {
   ];
   buttons.forEach(b => {
     if (b.divider) {
-      const sp = document.createElement('span'); sp.className = 'notes-toolbar';
-      sp.style.cssText = 'border-left:1px solid var(--separator);margin:0 4px;height:22px';
+      const sp = document.createElement('span'); sp.className = 'tb-sep';
       tb.appendChild(sp);
       return;
     }
@@ -3227,7 +3325,53 @@ function buildRichNotes(parentEl, container, placeholder) {
       saveState();
     }, 80);
   });
-  // Bullet/numbered auto-continue is handled natively by contenteditable
+  // Notion-style keyboard shortcuts
+  ed.addEventListener('keydown', e => {
+    const meta = e.metaKey || e.ctrlKey;
+    if (!meta) return;
+    const k = e.key.toLowerCase();
+    // Native: B / I / U handled by contenteditable already
+    if (e.shiftKey) {
+      if (k === 's' || k === 'x') {                // Cmd+Shift+S or X → strikethrough
+        e.preventDefault();
+        document.execCommand('strikeThrough');
+      } else if (k === '7') {                       // Cmd+Shift+7 → numbered list
+        e.preventDefault();
+        document.execCommand('insertOrderedList');
+      } else if (k === '8') {                       // Cmd+Shift+8 → bullet list
+        e.preventDefault();
+        document.execCommand('insertUnorderedList');
+      } else if (k === '1') {                       // Cmd+Shift+1 → H1 (actually H2 to match toolbar)
+        e.preventDefault();
+        document.execCommand('formatBlock', false, 'h2');
+      } else if (k === '2') {                       // Cmd+Shift+2 → H3
+        e.preventDefault();
+        document.execCommand('formatBlock', false, 'h3');
+      } else if (k === '0') {                       // Cmd+Shift+0 → paragraph
+        e.preventDefault();
+        document.execCommand('formatBlock', false, 'p');
+      } else if (k === '9') {                       // Cmd+Shift+9 → toggle
+        e.preventDefault();
+        document.execCommand('insertHTML', false,
+          '<details open><summary>Toggle</summary><div>Content…</div></details><div><br></div>');
+      } else if (k === '_' || k === '-') {          // Cmd+Shift+- → divider
+        e.preventDefault();
+        document.execCommand('insertHTML', false, '<hr><div><br></div>');
+      } else if (k === '>') {                       // Cmd+Shift+. (>) → quote
+        e.preventDefault();
+        document.execCommand('formatBlock', false, 'blockquote');
+      }
+    } else {
+      if (k === 'e' || k === '`') {                 // Cmd+E or Cmd+` → inline code
+        e.preventDefault();
+        const sel = window.getSelection();
+        if (sel && sel.toString()) document.execCommand('insertHTML', false, `<code>${escapeHtml(sel.toString())}</code>`);
+        else document.execCommand('insertHTML', false, '<code>code</code>');
+      }
+    }
+    // Always persist after a shortcut
+    setTimeout(() => { container.notes = ed.innerHTML; saveState(); }, 0);
+  });
   parentEl.appendChild(ed);
 
   // Toolbar handlers
@@ -3589,7 +3733,12 @@ function renderBucketGroupedView(parentEl, taskBundles, opts) {
   groups.forEach((items, k) => {
     const grp = document.createElement('div'); grp.className = 'bucket-group';
     grp.dataset.bucketId = k;
+    const isCollapsed = !!state.collapsedBuckets[k];
+    if (isCollapsed) grp.classList.add('collapsed');
     const gh = document.createElement('div'); gh.className = 'bg-head';
+    gh.title = 'Click to minimise / expand';
+    const caret = document.createElement('span'); caret.className = 'bg-caret'; caret.textContent = '▸';
+    gh.appendChild(caret);
     const dot = document.createElement('span'); dot.className = 'bg-dot';
     const b = getBucket(k);
     dot.style.background = b ? b.color : 'rgba(127,127,127,0.5)';
@@ -3601,6 +3750,11 @@ function renderBucketGroupedView(parentEl, taskBundles, opts) {
     const doneCt = items.filter(x => x.task.done).length;
     cnt.textContent = items.length ? `${doneCt}/${items.length}` : '0';
     gh.appendChild(cnt);
+    gh.addEventListener('click', () => {
+      state.collapsedBuckets[k] = !state.collapsedBuckets[k];
+      saveState();
+      grp.classList.toggle('collapsed', !!state.collapsedBuckets[k]);
+    });
     grp.appendChild(gh);
     if (!items.length) {
       const empty = document.createElement('div'); empty.className = 'bg-empty';
@@ -3867,6 +4021,247 @@ function renderEodReport(parentEl, id) {
   parentEl.appendChild(section);
 }
 
+// Habit consistency across a date range. Returns: { applies, done, value }
+// applies = #days the habit was scheduled to apply, done = #days the user
+// logged it. value = sum of numeric values (for value-type habits).
+function habitConsistency(habit, startIso, endIso) {
+  let applies = 0, done = 0, valueSum = 0, valueCount = 0;
+  const start = new Date(startIso);
+  const end = new Date(endIso);
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const iso = isoDate(d.getFullYear(), d.getMonth(), d.getDate());
+    if (iso > todayIso()) break;
+    if (!habitApplies(habit, iso)) continue;
+    applies++;
+    const e = habit.entries && habit.entries[iso];
+    if (e && (e.done || (e.value != null && e.value !== ''))) {
+      done++;
+      if (e.value != null && e.value !== '') {
+        valueSum += Number(e.value) || 0;
+        valueCount++;
+      }
+    }
+  }
+  return { applies, done, valueSum, valueCount, avg: valueCount ? valueSum / valueCount : null };
+}
+
+// Render the habit consistency summary for a period.
+function renderHabitConsistencySection(parentEl, title, startIso, endIso) {
+  const section = document.createElement('div'); section.className = 'modal-section';
+  const h = document.createElement('h3'); h.textContent = title;
+  section.appendChild(h);
+  if (!state.habits.length) {
+    const sub = document.createElement('div');
+    sub.style.cssText = 'color:var(--text-tertiary);font-size:12.5px;font-style:italic;padding:4px 0';
+    sub.textContent = 'No habits yet. Add a habit from the Habit Trackers tab to track consistency here.';
+    section.appendChild(sub);
+    parentEl.appendChild(section);
+    return;
+  }
+  const card = document.createElement('div'); card.className = 'eow-summary';
+  state.habits.forEach(h => {
+    const c = habitConsistency(h, startIso, endIso);
+    if (c.applies === 0) return;
+    const pct = (c.done / c.applies) * 100;
+    const row = document.createElement('div'); row.className = 'eow-habits-row';
+    const icon = document.createElement('span'); icon.className = 'ehr-icon'; icon.textContent = h.icon || '🎯';
+    row.appendChild(icon);
+    const name = document.createElement('span'); name.className = 'ehr-name'; name.textContent = h.name || '(unnamed)';
+    row.appendChild(name);
+    const meta = document.createElement('span'); meta.className = 'ehr-meta';
+    let metaTxt = `${c.done}/${c.applies}`;
+    if (h.type === 'value' && c.avg != null) metaTxt += ` · avg ${c.avg.toFixed(1)}${h.unit ? ' ' + h.unit : ''}`;
+    meta.textContent = metaTxt;
+    row.appendChild(meta);
+    const bar = document.createElement('span'); bar.className = 'ehr-bar';
+    const fill = document.createElement('span');
+    fill.className = 'ehr-fill ' + (pct >= 80 ? 'good' : pct >= 50 ? 'warn' : 'bad');
+    fill.style.width = pct + '%';
+    bar.appendChild(fill);
+    row.appendChild(bar);
+    const pctLbl = document.createElement('span'); pctLbl.className = 'ehr-pct';
+    pctLbl.textContent = Math.round(pct) + '%';
+    row.appendChild(pctLbl);
+    card.appendChild(row);
+  });
+  if (!card.children.length) {
+    const sub = document.createElement('div');
+    sub.style.cssText = 'color:var(--text-tertiary);font-size:12.5px;font-style:italic;padding:4px 0';
+    sub.textContent = 'No habits were scheduled in this period.';
+    card.appendChild(sub);
+  }
+  section.appendChild(card);
+  parentEl.appendChild(section);
+}
+
+// Renders the end-of-week or end-of-month report inside the modal body.
+// kind: 'week' (state.weekReports, push to next Monday) | 'month' (push to next month)
+function renderPeriodReport(parentEl, kind, periodKey) {
+  const store = kind === 'week' ? state.weekReports : state.monthReports;
+  const labelNext = kind === 'week' ? 'next week' : 'next month';
+  const heading = kind === 'week' ? 'End-of-week report' : 'End-of-month report';
+  const goalsLbl = kind === 'week' ? `Goals for ${labelNext}` : `Goals for ${labelNext}`;
+  const section = document.createElement('div'); section.className = 'modal-section';
+  const h3 = document.createElement('h3'); h3.textContent = heading;
+  section.appendChild(h3);
+  if (!store[periodKey]) {
+    const btn = document.createElement('button'); btn.className = 'eod-button';
+    btn.innerHTML = `📝 Make ${kind === 'week' ? 'end-of-week' : 'end-of-month'} report`;
+    btn.addEventListener('click', () => {
+      store[periodKey] = { howItWent: '', wins: '', blockers: '', nextGoals: ['', '', ''] };
+      saveState();
+      renderModal();
+    });
+    section.appendChild(btn);
+    parentEl.appendChild(section);
+    return;
+  }
+  const r = store[periodKey];
+  if (!Array.isArray(r.nextGoals)) r.nextGoals = ['', '', ''];
+  while (r.nextGoals.length < 3) r.nextGoals.push('');
+  // 1. How did it go
+  const s1 = document.createElement('div'); s1.className = 'eod-section';
+  s1.innerHTML = `<h4>How did the ${kind} go?</h4>`;
+  const ta1 = document.createElement('textarea');
+  ta1.placeholder = 'Highlights, low points, what surprised you…';
+  ta1.value = r.howItWent || '';
+  ta1.addEventListener('input', e => { r.howItWent = e.target.value; saveState(); });
+  attachBulletAutocontinue(ta1); s1.appendChild(ta1); section.appendChild(s1);
+  // 2. Wins
+  const s2 = document.createElement('div'); s2.className = 'eod-section';
+  s2.innerHTML = `<h4>🏆 ${kind === 'week' ? 'Wins this week' : 'Wins this month'}</h4>`;
+  const ta2 = document.createElement('textarea');
+  ta2.placeholder = 'One per line — closed deals, breakthroughs, finished projects…';
+  ta2.value = r.wins || '';
+  ta2.addEventListener('input', e => { r.wins = e.target.value; saveState(); });
+  attachBulletAutocontinue(ta2); s2.appendChild(ta2); section.appendChild(s2);
+  // 3. Blockers
+  const s3 = document.createElement('div'); s3.className = 'eod-section';
+  s3.innerHTML = `<h4>⛔ ${kind === 'week' ? 'Blockers this week' : 'Blockers this month'}</h4>`;
+  const ta3 = document.createElement('textarea');
+  ta3.placeholder = 'What slowed you down — tooling, scope creep, energy dips…';
+  ta3.value = r.blockers || '';
+  ta3.addEventListener('input', e => { r.blockers = e.target.value; saveState(); });
+  attachBulletAutocontinue(ta3); s3.appendChild(ta3); section.appendChild(s3);
+  // 4. Habit consistency for this period
+  let startIso, endIso;
+  if (kind === 'week') {
+    startIso = periodKey;
+    const end = new Date(periodKey); end.setDate(end.getDate() + 6);
+    endIso = isoDate(end.getFullYear(), end.getMonth(), end.getDate());
+  } else {
+    const [yr, mo] = periodKey.split('-').map(Number);
+    startIso = isoDate(yr, mo - 1, 1);
+    endIso = isoDate(yr, mo - 1, daysInMonth(yr, mo - 1));
+  }
+  const habitWrap = document.createElement('div'); habitWrap.className = 'eod-section';
+  habitWrap.innerHTML = `<h4>🎯 Habit consistency · ${kind === 'week' ? 'this week' : 'this month'}</h4>`;
+  // Build habit rows inside this section (reuse the helper but append to the eod-section)
+  const consHost = document.createElement('div');
+  consHost.style.cssText = 'background:rgba(127,127,127,0.06);border-radius:8px;padding:8px 12px';
+  renderHabitConsistencyInto(consHost, startIso, endIso);
+  habitWrap.appendChild(consHost);
+  section.appendChild(habitWrap);
+  // 5. Goals for next period
+  const s5 = document.createElement('div'); s5.className = 'eod-section';
+  s5.innerHTML = `<h4>📋 ${goalsLbl}</h4>`;
+  for (let i = 0; i < 3; i++) {
+    const row = document.createElement('div'); row.className = 'eod-tomorrow-row';
+    const num = document.createElement('span'); num.className = 'num'; num.textContent = (i + 1) + '.';
+    const inp = document.createElement('input'); inp.type = 'text';
+    inp.placeholder = `${kind === 'week' ? 'Weekly goal' : 'Monthly project'} ${i + 1}…`;
+    inp.value = r.nextGoals[i] || '';
+    inp.addEventListener('input', e => { r.nextGoals[i] = e.target.value; saveState(); });
+    row.appendChild(num); row.appendChild(inp);
+    s5.appendChild(row);
+  }
+  const pushBtn = document.createElement('button');
+  pushBtn.style.cssText = 'background:var(--accent);color:#1a1a1a;border:none;padding:8px 14px;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px';
+  pushBtn.textContent = `→ Add these as ${kind === 'week' ? 'weekly goals' : 'monthly projects'} for ${labelNext}`;
+  pushBtn.addEventListener('click', () => {
+    let dstNode, nextLabel;
+    if (kind === 'week') {
+      const next = new Date(periodKey); next.setDate(next.getDate() + 7);
+      const nextMon = isoDate(next.getFullYear(), next.getMonth(), next.getDate());
+      dstNode = getNode('week', nextMon);
+      nextLabel = nextMon;
+    } else {
+      const [yr, mo] = periodKey.split('-').map(Number);
+      const next = new Date(yr, mo, 1);
+      const nextKey = isoMonth(next.getFullYear(), next.getMonth());
+      dstNode = getNode('monthProjects', nextKey);
+      nextLabel = nextKey;
+    }
+    let added = 0;
+    r.nextGoals.forEach(g => {
+      const t = (g || '').trim(); if (!t) return;
+      if (dstNode.tasks.some(x => x.text === t)) return;
+      dstNode.tasks.push(tk(t));
+      added++;
+    });
+    saveState();
+    alert(`Added ${added} goal${added === 1 ? '' : 's'} to ${nextLabel}.`);
+    renderModal();
+  });
+  s5.appendChild(pushBtn);
+  section.appendChild(s5);
+  // Clear button
+  const clr = document.createElement('button');
+  clr.style.cssText = 'background:transparent;border:1px solid rgba(255,69,58,0.30);color:var(--bad);padding:6px 12px;border-radius:7px;font-size:11.5px;cursor:pointer;font-family:inherit;margin-top:14px';
+  clr.textContent = `× Clear ${kind === 'week' ? 'end-of-week' : 'end-of-month'} report`;
+  clr.addEventListener('click', () => {
+    const removed = store[periodKey];
+    delete store[periodKey];
+    saveState();
+    recordChange(
+      `Cleared ${kind === 'week' ? 'end-of-week' : 'end-of-month'} report ${periodKey}`,
+      () => { store[periodKey] = removed; },
+      () => { delete store[periodKey]; }
+    );
+    renderModal();
+  });
+  section.appendChild(clr);
+  parentEl.appendChild(section);
+}
+
+// Append habit consistency rows into the given host element.
+function renderHabitConsistencyInto(host, startIso, endIso) {
+  if (!state.habits.length) {
+    host.innerHTML = `<div style="color:var(--text-tertiary);font-size:12.5px;font-style:italic">No habits to track. Add some from Habit Trackers.</div>`;
+    return;
+  }
+  let any = false;
+  state.habits.forEach(h => {
+    const c = habitConsistency(h, startIso, endIso);
+    if (c.applies === 0) return;
+    any = true;
+    const pct = (c.done / c.applies) * 100;
+    const row = document.createElement('div'); row.className = 'eow-habits-row';
+    const icon = document.createElement('span'); icon.className = 'ehr-icon'; icon.textContent = h.icon || '🎯';
+    row.appendChild(icon);
+    const name = document.createElement('span'); name.className = 'ehr-name'; name.textContent = h.name || '(unnamed)';
+    row.appendChild(name);
+    const meta = document.createElement('span'); meta.className = 'ehr-meta';
+    let metaTxt = `${c.done}/${c.applies}`;
+    if (h.type === 'value' && c.avg != null) metaTxt += ` · avg ${c.avg.toFixed(1)}${h.unit ? ' ' + h.unit : ''}`;
+    meta.textContent = metaTxt;
+    row.appendChild(meta);
+    const bar = document.createElement('span'); bar.className = 'ehr-bar';
+    const fill = document.createElement('span');
+    fill.className = 'ehr-fill ' + (pct >= 80 ? 'good' : pct >= 50 ? 'warn' : 'bad');
+    fill.style.width = pct + '%';
+    bar.appendChild(fill);
+    row.appendChild(bar);
+    const pctLbl = document.createElement('span'); pctLbl.className = 'ehr-pct';
+    pctLbl.textContent = Math.round(pct) + '%';
+    row.appendChild(pctLbl);
+    host.appendChild(row);
+  });
+  if (!any) {
+    host.innerHTML = `<div style="color:var(--text-tertiary);font-size:12.5px;font-style:italic">No habits were scheduled in this period.</div>`;
+  }
+}
+
 function openWeek(monday) {
   openModal({
     crumb: `Week · <b>${monday}</b>`,
@@ -3966,6 +4361,7 @@ function openWeek(monday) {
         title: 'By bucket',
         defaultContainer: { source: 'week', key: monday },
       });
+      renderPeriodReport(body, 'week', monday);
       renderModalNotesSection(body, n, { title: 'Notes', placeholder: 'How did the week go?' });
     },
   });
@@ -4005,6 +4401,7 @@ function openMonth(y, m) {
         title: 'Goals by bucket',
         defaultContainer: { source: 'monthProjects', key: monthKey },
       });
+      renderPeriodReport(body, 'month', monthKey);
       // Month-level notes — use rich editor backed by state.monthNotes
       const monthNotesContainer = {
         get notes() { return state.monthNotes[monthKey] || ''; },
