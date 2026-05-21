@@ -619,38 +619,43 @@
   }
   .notes-area:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint); }
 
-  /* ─── Notion-style rich notes editor (sharp + sleek) ────────────── */
+  /* ─── Notion-style rich notes editor (transparent + integrated) ─── */
+  /* Toolbar — flat, transparent, only revealed via subtle ghost buttons */
   .notes-toolbar {
     display: flex;
     flex-wrap: wrap;
-    gap: 2px;
-    margin-bottom: 8px;
-    padding: 4px;
-    background: var(--surface-raised);
-    border: 1px solid var(--border);
-    border-radius: 9px;
+    gap: 1px;
+    margin-bottom: 4px;
+    padding: 0;
+    background: transparent;
+    border: none;
     align-items: center;
+    opacity: 0.55;
+    transition: opacity 0.18s ease;
   }
+  /* Reveal toolbar fully when the user is interacting with notes */
+  .modal-section:hover .notes-toolbar,
+  .modal-section:focus-within .notes-toolbar { opacity: 1; }
   .notes-toolbar button {
     background: transparent;
     border: none;
-    color: var(--text-secondary);
-    padding: 5px 9px;
-    font-size: 12px;
-    border-radius: 6px;
+    color: var(--text-tertiary);
+    padding: 4px 7px;
+    font-size: 11.5px;
+    border-radius: 5px;
     cursor: pointer;
     font-family: inherit;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    min-width: 28px;
+    gap: 3px;
+    min-width: 24px;
     justify-content: center;
     transition: color 0.12s, background 0.12s;
     font-weight: 500;
   }
   .notes-toolbar button:hover {
     color: var(--text);
-    background: rgba(255,255,255,0.08);
+    background: rgba(127,127,127,0.14);
   }
   .notes-toolbar button:active {
     background: var(--accent-tint);
@@ -658,28 +663,29 @@
   }
   .notes-toolbar .tb-sep {
     width: 1px;
-    height: 18px;
+    height: 14px;
     background: var(--separator);
-    margin: 0 2px;
+    margin: 0 3px;
     flex-shrink: 0;
   }
 
+  /* Editor — fully transparent, no border, sits inside the modal card */
   .notes-rich {
     width: 100%; min-height: 160px;
-    background: var(--notes-bg);
-    border: 1px solid var(--border-input);
-    border-radius: 10px;
+    background: transparent;
+    border: none;
     color: var(--text);
-    font-size: 14.5px; line-height: 1.65;
-    padding: 14px 18px;
+    font-size: 15px; line-height: 1.7;
+    padding: 2px 0 8px;
     font-family: inherit;
     outline: none;
     overflow-y: auto;
     letter-spacing: -0.005em;
   }
-  .notes-rich:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-tint);
+  .notes-rich:focus { outline: none; }
+  .notes-rich:empty::before {
+    color: var(--text-tertiary);
+    opacity: 0.45;
   }
   .notes-rich:empty::before {
     content: attr(data-placeholder);
@@ -1651,12 +1657,12 @@
   .bucket-group.drop-active .bg-empty { color: var(--accent-hover); }
   /* Decorative children inside the bucket-group don't intercept drag
      events — keeps the parent's dragenter/leave + drop-active stable.
-     Interactive children (rows, add button) stay clickable. */
-  .bucket-group .bg-head,
-  .bucket-group .bg-head *,
-  .bucket-group .bg-empty,
-  .bucket-group .bg-count,
-  .bucket-group .bg-dot { pointer-events: none; }
+     The .bg-head itself stays clickable (collapse toggle); only its
+     non-interactive sub-elements get pointer-events: none. */
+  .bucket-group .bg-head > .bg-dot,
+  .bucket-group .bg-head > .bg-caret,
+  .bucket-group .bg-head > .bg-count,
+  .bucket-group .bg-empty { pointer-events: none; }
 
   /* ─── Habit graphs ──────────────────────────────────────────────── */
   .habit-charts {
@@ -3325,52 +3331,39 @@ function buildRichNotes(parentEl, container, placeholder) {
       saveState();
     }, 80);
   });
-  // Notion-style keyboard shortcuts
+  // Notion-style keyboard shortcuts. Uses e.code for digits so that
+  // Shift+number combos work (e.key='&' on US keyboard but code='Digit7').
   ed.addEventListener('keydown', e => {
     const meta = e.metaKey || e.ctrlKey;
     if (!meta) return;
     const k = e.key.toLowerCase();
-    // Native: B / I / U handled by contenteditable already
+    const digit = e.code && e.code.startsWith('Digit') ? e.code.slice(5) : null;
+    let handled = true;
     if (e.shiftKey) {
-      if (k === 's' || k === 'x') {                // Cmd+Shift+S or X → strikethrough
-        e.preventDefault();
-        document.execCommand('strikeThrough');
-      } else if (k === '7') {                       // Cmd+Shift+7 → numbered list
-        e.preventDefault();
-        document.execCommand('insertOrderedList');
-      } else if (k === '8') {                       // Cmd+Shift+8 → bullet list
-        e.preventDefault();
-        document.execCommand('insertUnorderedList');
-      } else if (k === '1') {                       // Cmd+Shift+1 → H1 (actually H2 to match toolbar)
-        e.preventDefault();
-        document.execCommand('formatBlock', false, 'h2');
-      } else if (k === '2') {                       // Cmd+Shift+2 → H3
-        e.preventDefault();
-        document.execCommand('formatBlock', false, 'h3');
-      } else if (k === '0') {                       // Cmd+Shift+0 → paragraph
-        e.preventDefault();
-        document.execCommand('formatBlock', false, 'p');
-      } else if (k === '9') {                       // Cmd+Shift+9 → toggle
-        e.preventDefault();
-        document.execCommand('insertHTML', false,
-          '<details open><summary>Toggle</summary><div>Content…</div></details><div><br></div>');
-      } else if (k === '_' || k === '-') {          // Cmd+Shift+- → divider
-        e.preventDefault();
-        document.execCommand('insertHTML', false, '<hr><div><br></div>');
-      } else if (k === '>') {                       // Cmd+Shift+. (>) → quote
-        e.preventDefault();
-        document.execCommand('formatBlock', false, 'blockquote');
-      }
+      if (k === 's' || k === 'x')                document.execCommand('strikeThrough');
+      else if (digit === '7')                     document.execCommand('insertOrderedList');
+      else if (digit === '8')                     document.execCommand('insertUnorderedList');
+      else if (digit === '1')                     document.execCommand('formatBlock', false, 'h2');
+      else if (digit === '2')                     document.execCommand('formatBlock', false, 'h3');
+      else if (digit === '0')                     document.execCommand('formatBlock', false, 'p');
+      else if (digit === '9')                     document.execCommand('insertHTML', false,
+        '<details open><summary>Toggle</summary><div>Content…</div></details><div><br></div>');
+      else if (k === '_' || k === '-' || e.code === 'Minus')
+                                                  document.execCommand('insertHTML', false, '<hr><div><br></div>');
+      else if (k === '>' || k === '.' || e.code === 'Period')
+                                                  document.execCommand('formatBlock', false, 'blockquote');
+      else handled = false;
     } else {
-      if (k === 'e' || k === '`') {                 // Cmd+E or Cmd+` → inline code
-        e.preventDefault();
+      if (k === 'e' || k === '`' || e.code === 'Backquote') {
         const sel = window.getSelection();
         if (sel && sel.toString()) document.execCommand('insertHTML', false, `<code>${escapeHtml(sel.toString())}</code>`);
         else document.execCommand('insertHTML', false, '<code>code</code>');
-      }
+      } else handled = false;
     }
-    // Always persist after a shortcut
-    setTimeout(() => { container.notes = ed.innerHTML; saveState(); }, 0);
+    if (handled) {
+      e.preventDefault();
+      setTimeout(() => { container.notes = ed.innerHTML; saveState(); }, 0);
+    }
   });
   parentEl.appendChild(ed);
 
