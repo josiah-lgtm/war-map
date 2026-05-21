@@ -1772,6 +1772,83 @@
   }
   [data-view-pane="dashboard"] .day-cell.has-tasks::after { width: 3px; height: 3px; bottom: 2px; right: 2px; }
 
+  /* ─── Move-to-a-day card inside the task modal ──────────────────── */
+  .move-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .move-card .move-quick {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .move-card .move-quick-btn {
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 12.5px;
+    font-weight: 500;
+    font-family: inherit;
+    transition: border-color 0.12s, color 0.12s, background 0.12s, transform 0.12s;
+  }
+  .move-card .move-quick-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent-hover);
+    background: var(--accent-tint);
+    transform: translateY(-1px);
+  }
+  .move-card .move-quick-btn .sub {
+    font-size: 10px; color: var(--text-tertiary);
+    margin-left: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .move-card .move-picker {
+    display: flex; align-items: center; gap: 8px;
+    border-top: 1px solid var(--separator);
+    padding-top: 10px;
+  }
+  .move-card .move-picker input[type=date] {
+    flex: 1;
+    background: var(--surface-input);
+    border: 1px solid var(--border-input);
+    border-radius: 7px;
+    color: var(--text);
+    font-size: 13px;
+    padding: 8px 10px;
+    font-family: inherit;
+  }
+  .move-card .move-picker input[type=date]:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-tint);
+  }
+  .move-card .move-btn {
+    background: var(--accent);
+    color: #1a1a1a;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 7px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    transition: background 0.12s;
+  }
+  .move-card .move-btn:hover { background: var(--accent-hover); }
+  .move-card .move-hint {
+    font-size: 11.5px;
+    color: var(--text-tertiary);
+    font-style: italic;
+  }
+
   /* ─── End-of-week / end-of-month report inside week / month modals ─ */
   .eow-summary {
     background: var(--surface);
@@ -3146,6 +3223,48 @@ function renderModalTaskSection(parentEl, container, opts) {
     handle.className = 'drag-handle'; handle.textContent = '⠿';
     row.appendChild(handle);
     if (source && key) makeCellDraggable(row, source, key, t.id);
+    // ALWAYS support drag-to-reorder within this list (works for the
+    // task-modal sub-task list where source/key aren't passed). Uses a
+    // distinct dataTransfer type so it doesn't conflict with the
+    // global wm-task drag payload.
+    row.draggable = true;
+    row.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('text/wm-subtask', t.id);
+      e.dataTransfer.effectAllowed = 'move';
+      row.classList.add('dragging');
+    });
+    row.addEventListener('dragend', () => row.classList.remove('dragging'));
+    row.addEventListener('dragover', e => {
+      if (!e.dataTransfer.types.includes('text/wm-subtask')) return;
+      const draggedId = (e.dataTransfer.getData && e.dataTransfer.getData('text/wm-subtask')) || '';
+      if (draggedId === t.id) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const rect = row.getBoundingClientRect();
+      const isUpper = e.clientY < rect.top + rect.height / 2;
+      row.classList.toggle('drop-target-above', isUpper);
+      row.classList.toggle('drop-target-below', !isUpper);
+    });
+    row.addEventListener('dragleave', () => {
+      row.classList.remove('drop-target-above', 'drop-target-below');
+    });
+    row.addEventListener('drop', e => {
+      if (!e.dataTransfer.types.includes('text/wm-subtask')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const isUpper = row.classList.contains('drop-target-above');
+      row.classList.remove('drop-target-above', 'drop-target-below');
+      const draggedId = e.dataTransfer.getData('text/wm-subtask');
+      if (!draggedId || draggedId === t.id) return;
+      const fromIdx = container.tasks.findIndex(x => x.id === draggedId);
+      if (fromIdx < 0) return;
+      const [moved] = container.tasks.splice(fromIdx, 1);
+      const toIdx = container.tasks.findIndex(x => x.id === t.id);
+      const insertAt = isUpper ? toIdx : toIdx + 1;
+      container.tasks.splice(insertAt, 0, moved);
+      saveState();
+      renderModal();
+    });
     const check = document.createElement('span');
     check.className = 'check';
     check.addEventListener('click', () => { t.done = !t.done; row.classList.toggle('done', t.done); saveState(); });
@@ -4409,6 +4528,111 @@ function openMonth(y, m) {
   });
 }
 
+// Resolve the parent container (.tasks-bearing object) for a task at the
+// given path inside rootRef. For a top-level task path = [id]; parent is
+// the root container. For deeper paths, parent is the task one level up.
+function parentContainerForPath(rootRef, path) {
+  const root = getNode(rootRef.source, rootRef.key);
+  if (path.length <= 1) return root;
+  let cur = root;
+  for (let i = 0; i < path.length - 1; i++) {
+    cur = (cur.tasks || []).find(t => t.id === path[i]);
+    if (!cur) return root;
+  }
+  return cur;
+}
+
+// Move (or promote) a task to a specific day's container. Closes the modal
+// because the task no longer lives at the current path.
+function moveTaskToDay(task, rootRef, path, targetDateIso) {
+  const parent = parentContainerForPath(rootRef, path);
+  const idx = parent.tasks.indexOf(task);
+  if (idx < 0) return;
+  // No-op if it's already a top-level task on the same day
+  if (rootRef.source === 'day' && rootRef.key === targetDateIso && path.length === 1) {
+    closeModal();
+    return;
+  }
+  parent.tasks.splice(idx, 1);
+  const dst = getNode('day', targetDateIso);
+  dst.tasks.push(task);
+  saveState();
+  const verb = path.length > 1 ? 'Promoted' : 'Moved';
+  recordChange(
+    `${verb} "${(task.text || 'task').slice(0, 30)}" to ${targetDateIso}`,
+    () => {
+      const i = dst.tasks.indexOf(task); if (i >= 0) dst.tasks.splice(i, 1);
+      parent.tasks.splice(idx, 0, task);
+    },
+    () => {
+      const i = parent.tasks.indexOf(task); if (i >= 0) parent.tasks.splice(i, 1);
+      dst.tasks.push(task);
+    }
+  );
+  closeModal();
+}
+
+// Render the "Move to a day" section inside a task modal.
+function renderMoveToSection(parentEl, task, rootRef, path) {
+  const section = document.createElement('div'); section.className = 'modal-section';
+  const isSub = path.length > 1;
+  const h = document.createElement('h3');
+  h.textContent = isSub ? 'Promote to a day' : 'Move to a day';
+  section.appendChild(h);
+  const card = document.createElement('div'); card.className = 'move-card';
+  // Quick picks
+  const today = new Date(todayIso());
+  const fmt = (d) => isoDate(d.getFullYear(), d.getMonth(), d.getDate());
+  const labelDate = (d) => `${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][(d.getDay()+6)%7]} ${d.getDate()}`;
+  function plus(days) { const d = new Date(today); d.setDate(d.getDate() + days); return d; }
+  function nextMondayDate() {
+    const d = new Date(today);
+    const dow = d.getDay();
+    const diff = dow === 0 ? 1 : 8 - dow;
+    d.setDate(d.getDate() + diff);
+    return d;
+  }
+  const quickPicks = [
+    { lbl: 'Today',     d: today,            sub: labelDate(today) },
+    { lbl: 'Tomorrow',  d: plus(1),          sub: labelDate(plus(1)) },
+    { lbl: 'In 3 days', d: plus(3),          sub: labelDate(plus(3)) },
+    { lbl: 'Next Mon',  d: nextMondayDate(), sub: labelDate(nextMondayDate()) },
+    { lbl: '+1 week',   d: plus(7),          sub: labelDate(plus(7)) },
+  ];
+  const quickRow = document.createElement('div'); quickRow.className = 'move-quick';
+  quickPicks.forEach(q => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'move-quick-btn';
+    btn.innerHTML = `${escapeHtml(q.lbl)}<span class="sub">${escapeHtml(q.sub)}</span>`;
+    btn.addEventListener('click', () => moveTaskToDay(task, rootRef, path, fmt(q.d)));
+    quickRow.appendChild(btn);
+  });
+  card.appendChild(quickRow);
+  // Date picker
+  const picker = document.createElement('div'); picker.className = 'move-picker';
+  const dateInp = document.createElement('input');
+  dateInp.type = 'date';
+  dateInp.value = (rootRef.source === 'day' && !isSub) ? rootRef.key : fmt(today);
+  picker.appendChild(dateInp);
+  const moveBtn = document.createElement('button');
+  moveBtn.className = 'move-btn';
+  moveBtn.textContent = isSub ? '→ Promote to day' : '→ Move to day';
+  moveBtn.addEventListener('click', () => {
+    if (!dateInp.value) return;
+    moveTaskToDay(task, rootRef, path, dateInp.value);
+  });
+  picker.appendChild(moveBtn);
+  card.appendChild(picker);
+  if (isSub) {
+    const hint = document.createElement('div'); hint.className = 'move-hint';
+    hint.textContent = 'Promoting extracts this sub-task from its parent and drops it onto the chosen day as a standalone task.';
+    card.appendChild(hint);
+  }
+  section.appendChild(card);
+  parentEl.appendChild(section);
+}
+
 function openTaskFromContainer(rootRef, taskId, parentPath = []) {
   const path = [...parentPath, taskId];
   const root = getNode(rootRef.source, rootRef.key);
@@ -4441,6 +4665,7 @@ function openTaskFromContainer(rootRef, taskId, parentPath = []) {
       meta.appendChild(doneToggle);
       body.appendChild(meta);
       renderBucketPicker(body, task);
+      renderMoveToSection(body, task, rootRef, path);
       renderScheduleSection(body, task, rootRef, parentPath);
       renderGoalSection(body, task);
       renderModalTaskSection(body, task, {
