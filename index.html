@@ -8,25 +8,63 @@
   :root {
     --bg: #0a0a0d;
     --surface: rgba(255,255,255,0.04);
-    --surface-raised: rgba(255,255,255,0.06);
-    --surface-input: rgba(255,255,255,0.03);
-    --separator: rgba(255,255,255,0.05);
-    --border: rgba(255,255,255,0.08);
-    --border-strong: rgba(255,255,255,0.14);
-    --border-input: rgba(255,255,255,0.10);
-    --text: #f0f0f3;
-    --text-secondary: #c5c5cc;
-    --text-tertiary: #9a9aa3;
+    --surface-raised: rgba(255,255,255,0.07);
+    --surface-input: rgba(255,255,255,0.04);
+    --separator: rgba(255,255,255,0.06);
+    --border: rgba(255,255,255,0.10);
+    --border-strong: rgba(255,255,255,0.18);
+    --border-input: rgba(255,255,255,0.12);
+    /* Brighter text in dark theme for higher contrast / readability */
+    --text: #ffffff;
+    --text-secondary: #e4e4ec;
+    --text-tertiary: #b5b5c2;
     --accent: #d4a017;
-    --accent-hover: #eecf6d;
-    --accent-tint: rgba(212,160,23,0.14);
+    --accent-hover: #f3d272;
+    --accent-tint: rgba(212,160,23,0.16);
     --accent-shadow: rgba(212,160,23,0.30);
-    --good: #30d158;
-    --good-tint: rgba(48,209,88,0.15);
-    --warn: #ff9f0a;
-    --warn-tint: rgba(255,159,10,0.15);
-    --bad: #ff453a;
-    --bad-tint: rgba(255,69,58,0.15);
+    --good: #4ade7c;
+    --good-tint: rgba(48,209,88,0.18);
+    --warn: #ffb13a;
+    --warn-tint: rgba(255,159,10,0.18);
+    --bad: #ff6358;
+    --bad-tint: rgba(255,69,58,0.18);
+    /* Surface-level colours that used to be hardcoded */
+    --sidebar-bg: rgba(0,0,0,0.40);
+    --topbar-bg: rgba(10,10,13,0.85);
+    --modal-bg: #1c1c22;
+    --tooltip-bg: #1a1a1f;
+    --picker-bg: #0a0a0d;
+    --print-bar-bg: #1c1c22;
+  }
+  /* Light theme — toggle with [data-theme="light"] on <body> */
+  body[data-theme="light"] {
+    --bg: #f5f5f7;
+    --surface: rgba(0,0,0,0.04);
+    --surface-raised: rgba(0,0,0,0.06);
+    --surface-input: rgba(255,255,255,0.85);
+    --separator: rgba(0,0,0,0.08);
+    --border: rgba(0,0,0,0.10);
+    --border-strong: rgba(0,0,0,0.20);
+    --border-input: rgba(0,0,0,0.14);
+    --text: #1a1a1d;
+    --text-secondary: #4a4a55;
+    --text-tertiary: #757582;
+    --accent: #b88914;
+    --accent-hover: #9a7110;
+    --accent-tint: rgba(184,137,20,0.14);
+    --accent-shadow: rgba(184,137,20,0.30);
+    --good: #14a544;
+    --good-tint: rgba(20,165,68,0.14);
+    --warn: #c5740a;
+    --warn-tint: rgba(217,119,6,0.16);
+    --bad: #c4302b;
+    --bad-tint: rgba(196,48,43,0.14);
+    --sidebar-bg: rgba(255,255,255,0.70);
+    --topbar-bg: rgba(245,245,247,0.85);
+    --modal-bg: #ffffff;
+    --tooltip-bg: #ffffff;
+    --picker-bg: #ffffff;
+    --print-bar-bg: #ffffff;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing: antialiased; font-feature-settings: "ss01" 1, "ss03" 1; }
@@ -37,12 +75,33 @@
   @media (max-width: 800px) { .app-shell { grid-template-columns: 1fr; } }
 
   .sidebar {
-    background: rgba(0,0,0,0.35);
+    background: var(--sidebar-bg);
     border-right: 1px solid var(--separator);
     padding: 22px 14px;
     position: sticky; top: 0;
     height: 100vh; overflow-y: auto;
+    display: flex;
+    flex-direction: column;
   }
+  .theme-toggle {
+    margin-top: 10px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 7px 10px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 12.5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .theme-toggle:hover { border-color: var(--accent); color: var(--accent-hover); }
+  .theme-toggle .theme-icon { font-size: 14px; line-height: 1; }
+  .app-shell.sb-collapsed .theme-toggle .theme-lbl { display: none; }
+  .app-shell.sb-collapsed .theme-toggle { justify-content: center; padding: 7px 0; }
   .sidebar .logo {
     display: flex; align-items: center; gap: 10px;
     font-size: 13px; font-weight: 700; letter-spacing: 0.1em;
@@ -73,7 +132,7 @@
 
   .topbar {
     position: sticky; top: 0; z-index: 30;
-    background: rgba(10,10,13,0.85);
+    background: var(--topbar-bg);
     backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--separator);
     padding: 12px 28px;
@@ -400,7 +459,7 @@
   }
   .modal-overlay.open { display: flex; }
   .modal {
-    background: #16161a;
+    background: var(--modal-bg);
     border: 1px solid var(--border);
     border-radius: 16px;
     max-width: 820px; width: 100%;
@@ -1300,7 +1359,7 @@
     position: absolute;
     left: 0;
     bottom: calc(100% + 6px);
-    background: #1a1a1f;
+    background: var(--tooltip-bg);
     border: 1px solid var(--accent);
     border-radius: 8px;
     padding: 8px 12px;
@@ -1566,7 +1625,7 @@
     display: none;
     align-items: center;
     gap: 6px;
-    background: #16161a;
+    background: var(--modal-bg);
     border: 1px solid var(--border-strong);
     border-radius: 12px;
     padding: 8px 10px 8px 14px;
@@ -1639,6 +1698,10 @@
       <button class="nav-item" data-view="habits"><span class="dot"></span><span>Habit Trackers</span></button>
       <button class="nav-item" data-view="settings"><span class="dot"></span><span>Settings</span></button>
     </nav>
+    <div style="flex:1"></div>
+    <button class="theme-toggle" id="theme-toggle" title="Toggle light / dark theme">
+      <span class="theme-icon" id="theme-icon">🌙</span><span class="theme-lbl" id="theme-lbl">Dark</span>
+    </button>
   </aside>
 
   <main>
@@ -1838,8 +1901,9 @@ function defaultState() {
     dayReports: {},         // { 'YYYY-MM-DD': { howItWent, wins, blockers, habitCheckins: {}, tomorrowPriorities: [a,b,c] } }
     monthMantras: {},       // { 'YYYY-MM': 'string' }
     sidebarCollapsed: false,
-    weekColRatios: [1, 1, 1, 1, 1, 1, 1, 1.4],   // 7 day cols + Weekly Goals (legacy; used until user drags)
-    weekColWidthsPx: null,                         // [8 numbers] once user drags — total can exceed viewport (horizontal scroll)
+    weekColRatios: [1, 1, 1, 1, 1, 1, 1, 1.4],
+    weekColWidthsPx: null,
+    theme: 'dark',          // 'dark' | 'light'
   };
 }
 
@@ -1915,6 +1979,7 @@ function migrateState(s) {
   // Pixel-width mode was removed (caused horizontal scroll); always start
   // in fit-to-viewport fr mode. The field is kept for backward compat.
   out.weekColWidthsPx = null;
+  out.theme = (s.theme === 'light' || s.theme === 'dark') ? s.theme : 'dark';
   return out;
 }
 
@@ -4379,6 +4444,22 @@ document.getElementById('sb-toggle').addEventListener('click', () => {
   applySidebarState();
 });
 applySidebarState();
+
+// Theme toggle (dark / light)
+function applyTheme() {
+  const t = state.theme === 'light' ? 'light' : 'dark';
+  document.body.setAttribute('data-theme', t);
+  const icon = document.getElementById('theme-icon');
+  const lbl = document.getElementById('theme-lbl');
+  if (icon) icon.textContent = t === 'light' ? '☀' : '🌙';
+  if (lbl) lbl.textContent = t === 'light' ? 'Light' : 'Dark';
+}
+document.getElementById('theme-toggle').addEventListener('click', () => {
+  state.theme = state.theme === 'light' ? 'dark' : 'light';
+  saveState();
+  applyTheme();
+});
+applyTheme();
 
 // Boot
 setView(state.activeView || 'dashboard');
