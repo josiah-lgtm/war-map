@@ -35,6 +35,7 @@
     --tooltip-bg: #1a1a1f;
     --picker-bg: #0a0a0d;
     --print-bar-bg: #1c1c22;
+    --notes-bg: rgba(255,255,255,0.06);
   }
   /* Light theme — toggle with [data-theme="light"] on <body> */
   body[data-theme="light"] {
@@ -65,6 +66,7 @@
     --tooltip-bg: #ffffff;
     --picker-bg: #ffffff;
     --print-bar-bg: #ffffff;
+    --notes-bg: rgba(0,0,0,0.04);
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing: antialiased; font-feature-settings: "ss01" 1, "ss03" 1; }
@@ -607,7 +609,7 @@
 
   .notes-area {
     width: 100%; min-height: 140px;
-    background: rgba(0,0,0,0.20);
+    background: var(--notes-bg);
     border: 1px solid var(--border-input);
     border-radius: 10px;
     color: var(--text);
@@ -616,6 +618,98 @@
     font-family: inherit; resize: vertical;
   }
   .notes-area:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint); }
+
+  /* ─── Notion-style rich notes editor ────────────────────────────── */
+  .notes-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+  .notes-toolbar button {
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 5px 9px;
+    font-size: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 28px;
+    justify-content: center;
+    transition: border-color 0.12s, color 0.12s, background 0.12s;
+  }
+  .notes-toolbar button:hover {
+    border-color: var(--accent);
+    color: var(--accent-hover);
+    background: var(--accent-tint);
+  }
+  .notes-toolbar button.divider-spacer { width: 1px; padding: 0; min-width: 1px; background: transparent; border: none; border-left: 1px solid var(--separator); margin: 0 4px; cursor: default; pointer-events: none; }
+  .notes-toolbar button.divider-spacer:hover { border-color: var(--separator); }
+
+  .notes-rich {
+    width: 100%; min-height: 140px;
+    background: var(--notes-bg);
+    border: 1px solid var(--border-input);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 14px; line-height: 1.6;
+    padding: 12px 14px;
+    font-family: inherit;
+    outline: none;
+    overflow-y: auto;
+  }
+  .notes-rich:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint); }
+  .notes-rich:empty::before {
+    content: attr(data-placeholder);
+    color: var(--text-tertiary);
+    opacity: 0.6;
+    pointer-events: none;
+    font-style: italic;
+  }
+  .notes-rich p, .notes-rich div { margin: 0; }
+  .notes-rich p + p, .notes-rich div + div { margin-top: 4px; }
+  .notes-rich ul, .notes-rich ol { padding-left: 24px; margin: 4px 0; }
+  .notes-rich li { margin: 3px 0; }
+  .notes-rich li.done, .notes-rich li.checked, .notes-rich .strike { text-decoration: line-through; opacity: 0.55; }
+  .notes-rich h2 { font-size: 18px; font-weight: 700; margin: 12px 0 4px; color: var(--text); }
+  .notes-rich h3 { font-size: 16px; font-weight: 700; margin: 10px 0 4px; color: var(--text); }
+  .notes-rich hr {
+    border: none; border-top: 1px solid var(--separator);
+    margin: 12px 0;
+  }
+  .notes-rich blockquote {
+    border-left: 3px solid var(--accent);
+    padding: 4px 0 4px 12px;
+    margin: 8px 0;
+    color: var(--text-secondary);
+    font-style: italic;
+  }
+  .notes-rich code {
+    background: rgba(127,127,127,0.18);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12.5px;
+  }
+  .notes-rich details {
+    padding: 6px 10px;
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    margin: 6px 0;
+  }
+  .notes-rich details summary {
+    cursor: pointer;
+    font-weight: 600;
+    padding: 2px 0;
+    outline: none;
+  }
+  .notes-rich details summary:hover { color: var(--accent-hover); }
+  .notes-rich details[open] summary { margin-bottom: 6px; }
 
   /* Bucket picker / chips inline */
   .bucket-row {
@@ -2168,7 +2262,27 @@ function moveTask(from, to) {
   const [task] = src.tasks.splice(idx, 1);
   dst.tasks.push(task);
   saveState();
-  // Re-render appropriate views
+  if (state.activeView === 'dashboard') renderDashboard();
+  if (state.activeView === 'month') renderMonth();
+  if (modalStack.length) renderModal();
+}
+
+// Like moveTask but inserts at a specific position relative to refTaskId.
+// Handles intra-container reordering (drag up/down within a day).
+function moveTaskToPosition(from, toRef, refTaskId, position) {
+  const src = getNode(from.source, from.key);
+  const dst = getNode(toRef.source, toRef.key);
+  const srcIdx = src.tasks.findIndex(t => t.id === from.taskId);
+  if (srcIdx < 0) return;
+  const [task] = src.tasks.splice(srcIdx, 1);
+  const refIdx = dst.tasks.findIndex(t => t.id === refTaskId);
+  if (refIdx < 0) {
+    dst.tasks.push(task);
+  } else {
+    const insertAt = position === 'before' ? refIdx : refIdx + 1;
+    dst.tasks.splice(insertAt, 0, task);
+  }
+  saveState();
   if (state.activeView === 'dashboard') renderDashboard();
   if (state.activeView === 'month') renderMonth();
   if (modalStack.length) renderModal();
@@ -2317,7 +2431,32 @@ function renderCells(container, opts) {
       if (ev.target.closest('.row-act')) return;
       openTask && openTask(t);
     });
-    if (source && key) makeCellDraggable(cell, source, key, t.id);
+    if (source && key) {
+      makeCellDraggable(cell, source, key, t.id);
+      // Per-cell drop target: detect above/below and reorder within the
+      // container (or move + reorder cross-container).
+      cell.addEventListener('dragover', ev => {
+        if (!dragPayload) return;
+        if (dragPayload.taskId === t.id && dragPayload.source === source && dragPayload.key === key) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        const rect = cell.getBoundingClientRect();
+        const isUpper = ev.clientY < rect.top + rect.height / 2;
+        cell.classList.toggle('drop-target-above', isUpper);
+        cell.classList.toggle('drop-target-below', !isUpper);
+      });
+      cell.addEventListener('dragleave', () => {
+        cell.classList.remove('drop-target-above', 'drop-target-below');
+      });
+      cell.addEventListener('drop', ev => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const isUpper = cell.classList.contains('drop-target-above');
+        cell.classList.remove('drop-target-above', 'drop-target-below');
+        if (!dragPayload) return;
+        moveTaskToPosition(dragPayload, { source, key }, t.id, isUpper ? 'before' : 'after');
+      });
+    }
     wrap.appendChild(cell);
   });
   // Add button OR inline input
@@ -2977,20 +3116,106 @@ function attachBulletAutocontinue(ta) {
   });
 }
 
+// Notion-style rich notes editor — contenteditable + toolbar.
+// Persists HTML to container.notes. Legacy plain-text notes are auto-
+// converted to <div> lines on first render.
 function renderModalNotesSection(parentEl, container, opts) {
-  const { title = 'Notes', placeholder = 'Free-form notes… (type "- " for a bullet list)' } = opts || {};
+  const { title = 'Notes', placeholder = 'Write notes here…  ⌘B bold · ⌘I italic · type "- " for a bullet' } = opts || {};
   const section = document.createElement('div');
   section.className = 'modal-section';
   const h = document.createElement('h3'); h.textContent = title;
   section.appendChild(h);
-  const ta = document.createElement('textarea');
-  ta.className = 'notes-area';
-  ta.placeholder = placeholder;
-  ta.value = container.notes || '';
-  ta.addEventListener('input', e => { container.notes = e.target.value; saveState(); });
-  attachBulletAutocontinue(ta);
-  section.appendChild(ta);
+  buildRichNotes(section, container, placeholder);
   parentEl.appendChild(section);
+}
+
+function buildRichNotes(parentEl, container, placeholder) {
+  // Toolbar
+  const tb = document.createElement('div');
+  tb.className = 'notes-toolbar';
+  const buttons = [
+    { html: '<b>B</b>',          title: 'Bold (⌘B)',          cmd: 'bold' },
+    { html: '<i>I</i>',          title: 'Italic (⌘I)',        cmd: 'italic' },
+    { html: '<u>U</u>',          title: 'Underline (⌘U)',     cmd: 'underline' },
+    { html: '<s>S</s>',          title: 'Strikethrough',       cmd: 'strikeThrough' },
+    { divider: true },
+    { html: 'H2',                title: 'Heading',             cmd: 'formatBlock', arg: 'h2' },
+    { html: 'H3',                title: 'Sub-heading',         cmd: 'formatBlock', arg: 'h3' },
+    { html: '¶',                 title: 'Paragraph',           cmd: 'formatBlock', arg: 'p' },
+    { divider: true },
+    { html: '• List',            title: 'Bullet list',         cmd: 'insertUnorderedList' },
+    { html: '1. List',           title: 'Numbered list',       cmd: 'insertOrderedList' },
+    { html: '☐ Todo',            title: 'Bullet (cross out by selecting + S)', cmd: 'insertUnorderedList' },
+    { divider: true },
+    { html: '“ Quote',           title: 'Quote',               cmd: 'formatBlock', arg: 'blockquote' },
+    { html: '&lt;/&gt;',         title: 'Inline code',         action: 'code' },
+    { html: '▸ Toggle',          title: 'Toggle (collapsible)', action: 'toggle' },
+    { html: '— Divider',         title: 'Horizontal divider',   action: 'divider' },
+  ];
+  buttons.forEach(b => {
+    if (b.divider) {
+      const sp = document.createElement('span'); sp.className = 'notes-toolbar';
+      sp.style.cssText = 'border-left:1px solid var(--separator);margin:0 4px;height:22px';
+      tb.appendChild(sp);
+      return;
+    }
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.innerHTML = b.html;
+    btn.title = b.title;
+    if (b.cmd) { btn.dataset.cmd = b.cmd; if (b.arg) btn.dataset.arg = b.arg; }
+    if (b.action) btn.dataset.action = b.action;
+    tb.appendChild(btn);
+  });
+  parentEl.appendChild(tb);
+
+  // Editor
+  const ed = document.createElement('div');
+  ed.className = 'notes-rich';
+  ed.contentEditable = 'true';
+  ed.setAttribute('data-placeholder', placeholder);
+  // Initial content: HTML if present, else plain text wrapped in <div>s
+  const raw = container.notes || '';
+  if (raw && /<[a-z][^>]*>/i.test(raw)) {
+    ed.innerHTML = raw;
+  } else if (raw) {
+    ed.innerHTML = raw.split('\n').map(l => `<div>${escapeHtml(l) || '<br>'}</div>`).join('');
+  }
+  let saveT;
+  ed.addEventListener('input', () => {
+    clearTimeout(saveT);
+    saveT = setTimeout(() => {
+      container.notes = ed.innerHTML;
+      saveState();
+    }, 80);
+  });
+  // Bullet/numbered auto-continue is handled natively by contenteditable
+  parentEl.appendChild(ed);
+
+  // Toolbar handlers
+  tb.addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    e.preventDefault();
+    ed.focus();
+    if (btn.dataset.cmd) {
+      document.execCommand(btn.dataset.cmd, false, btn.dataset.arg || null);
+    } else if (btn.dataset.action === 'toggle') {
+      document.execCommand('insertHTML', false,
+        '<details open><summary>Toggle heading</summary><div>Content inside the toggle…</div></details><div><br></div>');
+    } else if (btn.dataset.action === 'divider') {
+      document.execCommand('insertHTML', false, '<hr><div><br></div>');
+    } else if (btn.dataset.action === 'code') {
+      const sel = window.getSelection();
+      if (sel && sel.toString()) {
+        document.execCommand('insertHTML', false, `<code>${escapeHtml(sel.toString())}</code>`);
+      } else {
+        document.execCommand('insertHTML', false, '<code>code</code>');
+      }
+    }
+    container.notes = ed.innerHTML;
+    saveState();
+  });
 }
 
 function renderBucketPicker(parentEl, task) {
@@ -3297,43 +3522,53 @@ function renderScheduleSection(parentEl, task, rootRef, parentPath) {
   parentEl.appendChild(section);
 }
 
-// By-bucket grouped view (used by week + month modals)
+// By-bucket grouped view (used by week + month modals).
+// taskBundles: array of { task, contextLabel, source, key }
+// Each .bucket-group becomes a drop target — drop a task on a group to
+// assign it to that bucket. Rows inside groups are draggable too so you
+// can move tasks between buckets without going back to the calendar.
 function renderBucketGroupedView(parentEl, taskBundles, opts) {
-  // taskBundles: array of { task, contextLabel } — flat list to group
   const { title = 'By bucket' } = opts || {};
   const section = document.createElement('div');
   section.className = 'modal-section';
   const h = document.createElement('h3'); h.textContent = title;
   section.appendChild(h);
-  // Group by bucket id (and "uncategorised")
+  const sub = document.createElement('div');
+  sub.style.cssText = 'color:var(--text-tertiary);font-size:11.5px;margin:-6px 0 8px';
+  sub.textContent = 'Drag any task into a bucket below to assign it.';
+  section.appendChild(sub);
+  // Group by bucket id (always show all buckets + uncategorised so they're
+  // valid drop targets even when empty).
   const groups = new Map();
   state.buckets.forEach(b => groups.set(b.id, []));
   groups.set('_none', []);
-  taskBundles.forEach(({ task, contextLabel }) => {
-    const k = task.bucket || '_none';
+  taskBundles.forEach(b => {
+    const k = b.task.bucket || '_none';
     if (!groups.has(k)) groups.set(k, []);
-    groups.get(k).push({ task, contextLabel });
+    groups.get(k).push(b);
   });
-  // Render each group (only non-empty)
-  let any = false;
   groups.forEach((items, k) => {
-    if (!items.length) return;
-    any = true;
     const grp = document.createElement('div'); grp.className = 'bucket-group';
+    grp.dataset.bucketId = k;
     const gh = document.createElement('div'); gh.className = 'bg-head';
     const dot = document.createElement('span'); dot.className = 'bg-dot';
     const b = getBucket(k);
-    dot.style.background = b ? b.color : 'rgba(255,255,255,0.18)';
+    dot.style.background = b ? b.color : 'rgba(127,127,127,0.4)';
     gh.appendChild(dot);
     const lbl = document.createElement('span');
     lbl.textContent = b ? `${b.icon || ''} ${b.label}`.trim() : 'Uncategorised';
     gh.appendChild(lbl);
     const cnt = document.createElement('span'); cnt.className = 'bg-count';
-    const doneCt = items.filter(({ task }) => task.done).length;
-    cnt.textContent = `${doneCt}/${items.length}`;
+    const doneCt = items.filter(x => x.task.done).length;
+    cnt.textContent = items.length ? `${doneCt}/${items.length}` : '0';
     gh.appendChild(cnt);
     grp.appendChild(gh);
-    items.forEach(({ task, contextLabel }) => {
+    if (!items.length) {
+      const empty = document.createElement('div'); empty.className = 'bg-empty';
+      empty.textContent = 'Drop a task here to add it.';
+      grp.appendChild(empty);
+    }
+    items.forEach(({ task, contextLabel, source, key }) => {
       const row = document.createElement('div');
       row.className = 'cell' + (task.done ? ' done' : '');
       const check = document.createElement('span');
@@ -3344,15 +3579,13 @@ function renderBucketGroupedView(parentEl, taskBundles, opts) {
       text.className = 'text';
       text.innerHTML = `${escapeHtml(task.text || '(empty)')} <span class="meta">${escapeHtml(contextLabel)}</span>`;
       row.appendChild(text);
+      if (source && key) makeCellDraggable(row, source, key, task.id);
       grp.appendChild(row);
     });
+    // Bucket-group drop target — drop a task to assign it to this bucket
+    makeBucketDropTarget(grp, k === '_none' ? null : k);
     section.appendChild(grp);
   });
-  if (!any) {
-    const empty = document.createElement('div'); empty.className = 'bg-empty';
-    empty.textContent = 'No tasks yet — add tasks above and they\'ll group here.';
-    section.appendChild(empty);
-  }
   parentEl.appendChild(section);
 }
 
@@ -3574,11 +3807,11 @@ function openWeek(monday) {
         const did = isoDate(dt.getFullYear(), dt.getMonth(), dt.getDate());
         const dn = state.days[did];
         if (dn) {
-          dn.tasks.forEach(t => { allTasks.push(t); dayBundles.push({ task: t, contextLabel: `${WEEKDAYS_SHORT[i]} ${did.slice(8)}` }); });
+          dn.tasks.forEach(t => { allTasks.push(t); dayBundles.push({ task: t, contextLabel: `${WEEKDAYS_SHORT[i]} ${did.slice(8)}`, source: 'day', key: did }); });
         }
       }
       // Include weekly goals in the count
-      n.tasks.forEach(t => { allTasks.push(t); dayBundles.push({ task: t, contextLabel: 'Weekly goal' }); });
+      n.tasks.forEach(t => { allTasks.push(t); dayBundles.push({ task: t, contextLabel: 'Weekly goal', source: 'week', key: monday }); });
       const totalT = allTasks.length;
       const doneT = allTasks.filter(t => t.done).length;
       const pctTasks = totalT ? (doneT / totalT) * 100 : 0;
@@ -3683,25 +3916,22 @@ function openMonth(y, m) {
       });
       // By-bucket view across all month tasks (projects + KPIs + day tasks)
       const bundles = [];
-      projects.tasks.forEach(t => bundles.push({ task: t, contextLabel: 'Project' }));
-      kpis.tasks.forEach(t => bundles.push({ task: t, contextLabel: 'KPI' }));
+      projects.tasks.forEach(t => bundles.push({ task: t, contextLabel: 'Project', source: 'monthProjects', key: monthKey }));
+      kpis.tasks.forEach(t => bundles.push({ task: t, contextLabel: 'KPI', source: 'monthKPIs', key: monthKey }));
       for (let day = 1; day <= totalDays; day++) {
         const did = isoDate(y, m, day);
-        (state.days[did]?.tasks || []).forEach(t => bundles.push({ task: t, contextLabel: `${day}` }));
+        (state.days[did]?.tasks || []).forEach(t => bundles.push({ task: t, contextLabel: `${day}`, source: 'day', key: did }));
       }
       renderBucketGroupedView(body, bundles, { title: 'By bucket (whole month)' });
-      // Month-level notes
-      if (!state.monthNotes[monthKey]) state.monthNotes[monthKey] = '';
+      // Month-level notes — use rich editor backed by state.monthNotes
+      const monthNotesContainer = {
+        get notes() { return state.monthNotes[monthKey] || ''; },
+        set notes(v) { state.monthNotes[monthKey] = v; },
+      };
       const section = document.createElement('div'); section.className = 'modal-section';
       const nh = document.createElement('h3'); nh.textContent = 'Notes';
       section.appendChild(nh);
-      const ta = document.createElement('textarea');
-      ta.className = 'notes-area';
-      ta.placeholder = 'Month wrap-up: what we shipped, what we delayed, what mattered…';
-      ta.value = state.monthNotes[monthKey] || '';
-      ta.addEventListener('input', e => { state.monthNotes[monthKey] = e.target.value; saveState(); });
-      attachBulletAutocontinue(ta);
-      section.appendChild(ta);
+      buildRichNotes(section, monthNotesContainer, 'Month wrap-up: what we shipped, what we delayed, what mattered…');
       body.appendChild(section);
     },
   });
